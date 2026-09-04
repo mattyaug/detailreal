@@ -22,12 +22,12 @@ export default async function BookPage({
   return (
     <>
       <SiteHeader />
-      <main>
-        <section className="page-hero">
+      <main className="booking-page">
+        <section className="page-hero booking-hero">
           <div className="shell">
-            <span className="eyebrow">Live availability</span>
+            <span className="eyebrow">Book online / Live availability</span>
             <h1>Book your mobile detail.</h1>
-            <p>Choose your service and date. Available appointment times update automatically around existing bookings and the owner&apos;s working hours.</p>
+            <p>Choose a service, pick a day from the menu, and reserve a live appointment time. We&apos;ll come to you.</p>
           </div>
         </section>
         <BookingForm initialService={initialService!} />
