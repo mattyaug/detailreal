@@ -29,41 +29,51 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
   // Luxon: Monday=1 ... Sunday=7. Database: Sunday=0 ... Saturday=6.
   const weekday = localDate.weekday === 7 ? 0 : localDate.weekday;
 
-  const availabilityResult = await query<AvailabilityRow>(
-    `SELECT weekday, start_time::text, end_time::text, is_enabled
-     FROM availability
-     WHERE weekday = $1
-     LIMIT 1`,
-    [weekday],
-  );
+  let startTime = DEFAULT_OPEN_TIME;
+  let endTime = DEFAULT_CLOSE_TIME;
+  let existingBookings: BookingRow[] = [];
 
-  // Every day is bookable. Keep the stored hours when present, but fall back to
-  // a full standard day so a missing or previously-disabled row cannot make the
-  // customer-facing scheduler appear empty.
-  const hours = availabilityResult.rows[0];
-  const startTime = hours?.start_time || DEFAULT_OPEN_TIME;
-  const endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
+  try {
+    const availabilityResult = await query<AvailabilityRow>(
+      `SELECT weekday, start_time::text, end_time::text, is_enabled
+       FROM availability
+       WHERE weekday = $1
+       LIMIT 1`,
+      [weekday],
+    );
 
-  const blockedResult = await query<{ blocked_date: string }>(
-    `SELECT blocked_date::text
-     FROM blocked_dates
-     WHERE blocked_date = $1::date
-     LIMIT 1`,
-    [date],
-  );
-  if (blockedResult.rowCount) return [];
+    // Every day is bookable. Stored hours customize the standard 8–5 day.
+    const hours = availabilityResult.rows[0];
+    startTime = hours?.start_time || DEFAULT_OPEN_TIME;
+    endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
 
-  const dayStart = localDate.startOf("day").toUTC();
-  const dayEnd = localDate.endOf("day").toUTC();
-  const bookingsResult = await query<BookingRow>(
-    `SELECT starts_at, ends_at
-     FROM bookings
-     WHERE status <> 'cancelled'
-       AND starts_at < $2
-       AND ends_at > $1
-     ORDER BY starts_at ASC`,
-    [dayStart.toJSDate(), dayEnd.toJSDate()],
-  );
+    const blockedResult = await query<{ blocked_date: string }>(
+      `SELECT blocked_date::text
+       FROM blocked_dates
+       WHERE blocked_date = $1::date
+       LIMIT 1`,
+      [date],
+    );
+    if (blockedResult.rowCount) return [];
+
+    const dayStart = localDate.startOf("day").toUTC();
+    const dayEnd = localDate.endOf("day").toUTC();
+    const bookingsResult = await query<BookingRow>(
+      `SELECT starts_at, ends_at
+       FROM bookings
+       WHERE status <> 'cancelled'
+         AND starts_at < $2
+         AND ends_at > $1
+       ORDER BY starts_at ASC`,
+      [dayStart.toJSDate(), dayEnd.toJSDate()],
+    );
+    existingBookings = bookingsResult.rows;
+  } catch (error) {
+    // Availability should remain visible while the database is being provisioned
+    // or briefly unreachable. The booking endpoint still performs the definitive
+    // database insert, so it remains the final guard against double booking.
+    console.error("Using default availability because schedule storage is unavailable:", error);
+  }
 
   const [startHour, startMinute] = startTime.split(":").map(Number);
   const [endHour, endMinute] = endTime.split(":").map(Number);
@@ -78,7 +88,7 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     const slotStartUtc = cursor.toUTC();
     const slotEndUtc = slotEnd.toUTC();
 
-    const overlaps = bookingsResult.rows.some((booking) => {
+    const overlaps = existingBookings.some((booking) => {
       const existingStart = DateTime.fromJSDate(booking.starts_at).toUTC();
       const existingEnd = DateTime.fromJSDate(booking.ends_at).toUTC();
       return slotStartUtc < existingEnd && slotEndUtc > existingStart;
