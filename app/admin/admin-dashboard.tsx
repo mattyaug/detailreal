@@ -128,7 +128,7 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     <>
       <header className="admin-topbar">
         <div className="admin-shell admin-topbar-inner">
-          <div className="brand"><span className="brand-mark">PMD</span><span>Scheduling</span></div>
+          <div className="brand"><span className="brand-mark">P</span><span>Scheduling</span></div>
           <nav><a className="small-button" href="/" target="_blank">View website</a><button className="small-button" onClick={logout}>Sign out</button></nav>
         </div>
       </header>
