@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { execute, query } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,9 +9,9 @@ export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const result = await query(
-      `SELECT id::text, blocked_date::text, reason
+      `SELECT CAST(id AS TEXT) AS id, blocked_date, reason
        FROM blocked_dates
-       WHERE blocked_date >= CURRENT_DATE
+       WHERE blocked_date >= date('now')
        ORDER BY blocked_date ASC`,
     );
     return NextResponse.json({ blockedDates: result.rows });
@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
     const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 200) : "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return NextResponse.json({ error: "Choose a valid date." }, { status: 400 });
 
-    await query(
+    await execute(
       `INSERT INTO blocked_dates (blocked_date, reason)
-       VALUES ($1::date, $2)
+       VALUES (?, ?)
        ON CONFLICT (blocked_date) DO UPDATE SET reason = EXCLUDED.reason`,
       [date, reason || null],
     );
@@ -47,7 +47,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const id = request.nextUrl.searchParams.get("id") || "";
     if (!/^\d+$/.test(id)) return NextResponse.json({ error: "Invalid blocked date." }, { status: 400 });
-    await query(`DELETE FROM blocked_dates WHERE id = $1`, [id]);
+    await execute(`DELETE FROM blocked_dates WHERE id = ?`, [id]);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(error);

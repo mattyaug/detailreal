@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { query } from "@/lib/db";
+import { execute, query } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function GET() {
       `SELECT id, customer_name, email, phone, address, vehicle, service_name,
               starts_at, ends_at, status, notes
        FROM bookings
-       WHERE starts_at >= NOW() - INTERVAL '1 day'
+       WHERE starts_at >= datetime('now', '-1 day')
        ORDER BY starts_at ASC
        LIMIT 150`,
     );
@@ -38,9 +38,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     try {
-      const result = await query(
-        `UPDATE bookings SET status = $2, updated_at = NOW() WHERE id = $1 RETURNING id`,
-        [id, status],
+      const result = await execute(
+        `UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        [status, id],
       );
       if (!result.rowCount) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
     } catch (error: any) {

@@ -8,8 +8,8 @@ GitHub-ready mobile detailing website and built-in scheduler for a Portland, Tex
 - Service cards and editable starter pricing
 - Customer booking page with live appointment availability
 - Portland/Central Time scheduling with daylight-saving-time handling
-- PostgreSQL persistence
-- Database-level protection against overlapping active bookings
+- Cloudflare D1 persistence
+- Atomic protection against overlapping active bookings
 - Password-protected owner dashboard
 - Owner controls for weekly working hours, blocked dates, cancellations, and completed jobs
 - `admin.` and `schedule.` owner subdomain routing plus optional `book.` customer-booking subdomain (Cloudflare-compatible Edge middleware)
@@ -19,7 +19,7 @@ GitHub-ready mobile detailing website and built-in scheduler for a Portland, Tex
 
 - Next.js 16 / React 19
 - TypeScript
-- PostgreSQL via `pg`
+- Cloudflare D1 (SQLite)
 - Luxon for Central Time scheduling
 - bcrypt password hashing
 - No Calendly or other external scheduler required
@@ -38,7 +38,7 @@ Copy `.env.example` to `.env.local`:
 cp .env.example .env.local
 ```
 
-Set your PostgreSQL URL and business information.
+Set your business information and owner credentials. No `DATABASE_URL` is needed.
 
 Generate the owner password hash **after `npm install`**:
 
@@ -56,15 +56,27 @@ openssl rand -base64 48
 
 Paste that into `SESSION_SECRET`.
 
-## 3. Create the database tables
+## 3. Create the database
 
-Use a PostgreSQL database from Neon, Supabase, Railway, Render, or another PostgreSQL provider. Then run:
+Create a D1 database while signed in to Wrangler:
+
+```bash
+npx wrangler d1 create detailreal-db
+```
+
+Copy the `database_id` from the output into the D1 entry in `wrangler.jsonc`. Initialize the local development database with:
 
 ```bash
 npm run db:init
 ```
 
-The SQL source is in `db/schema.sql` if you prefer to run it directly in your database console.
+Initialize the production D1 database with:
+
+```bash
+npm run db:init:remote
+```
+
+The SQLite schema is in `db/schema.sql`.
 
 ## 4. Run locally
 
@@ -89,7 +101,7 @@ The `/admin` route is protected even when you are not using a subdomain locally.
 5. Set the build command to `bunx opennextjs-cloudflare build` (or `npm exec opennextjs-cloudflare build`).
 6. Set the deploy command to `bunx opennextjs-cloudflare deploy` (or `npm exec opennextjs-cloudflare deploy`).
 7. Add the production environment variables/secrets in Cloudflare. Do **not** commit `.env.local` or `.dev.vars`.
-8. Run the database schema against your production PostgreSQL database.
+8. Create the D1 database, add its ID to `wrangler.jsonc`, and run `npm run db:init:remote`.
 9. Deploy.
 
 The repository includes `wrangler.jsonc` and `open-next.config.ts`, so the OpenNext build does not need to auto-generate its Cloudflare configuration.
@@ -170,7 +182,7 @@ This repository is configured for Cloudflare Workers with `@opennextjs/cloudflar
 
 The `build` script uses `next build --webpack`. Next.js 16 defaults to Turbopack, but Webpack remains a conservative OpenNext deployment choice and avoids known Turbopack/runtime compatibility problems seen in some OpenNext releases.
 
-Before deploying, configure these Cloudflare build variables/secrets: `DATABASE_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH_B64`, `SESSION_SECRET`, and `NEXT_PUBLIC_BASE_DOMAIN`. `NEXT_PUBLIC_BASE_DOMAIN` must also exist during the Next.js build because `NEXT_PUBLIC_` values can be embedded at build time.
+Before deploying, configure these Cloudflare build variables/secrets: `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH_B64`, `SESSION_SECRET`, and `NEXT_PUBLIC_BASE_DOMAIN`. `NEXT_PUBLIC_BASE_DOMAIN` must also exist during the Next.js build because `NEXT_PUBLIC_` values can be embedded at build time. The database is supplied through the `DB` binding in `wrangler.jsonc`, not an environment URL.
 
 To test the Cloudflare output locally after installing dependencies:
 

@@ -9,7 +9,7 @@ export default async function AdminLoginPage() {
   return (
     <main className="login-wrap">
       <section className="login-card">
-        <span className="brand-mark">PMD</span>
+        <span className="brand-mark">P</span>
         <h1>Owner access</h1>
         <p>Sign in to manage appointments, weekly hours, and blocked dates.</p>
         <AdminLoginForm />

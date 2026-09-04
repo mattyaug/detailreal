@@ -11,9 +11,12 @@ type AvailabilityRow = {
   is_enabled: boolean;
 };
 
+const DEFAULT_OPEN_TIME = "08:00";
+const DEFAULT_CLOSE_TIME = "17:00";
+
 type BookingRow = {
-  starts_at: Date;
-  ends_at: Date;
+  starts_at: string;
+  ends_at: string;
 };
 
 export async function getAvailableSlots(date: string, durationMinutes: number) {
@@ -26,40 +29,54 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
   // Luxon: Monday=1 ... Sunday=7. Database: Sunday=0 ... Saturday=6.
   const weekday = localDate.weekday === 7 ? 0 : localDate.weekday;
 
-  const availabilityResult = await query<AvailabilityRow>(
-    `SELECT weekday, start_time::text, end_time::text, is_enabled
-     FROM availability
-     WHERE weekday = $1
-     LIMIT 1`,
-    [weekday],
-  );
+  let startTime = DEFAULT_OPEN_TIME;
+  let endTime = DEFAULT_CLOSE_TIME;
+  let existingBookings: BookingRow[] = [];
 
-  const hours = availabilityResult.rows[0];
-  if (!hours?.is_enabled) return [];
+  try {
+    const availabilityResult = await query<AvailabilityRow>(
+      `SELECT weekday, start_time, end_time, is_enabled
+       FROM availability
+       WHERE weekday = ?
+       LIMIT 1`,
+      [weekday],
+    );
 
-  const blockedResult = await query<{ blocked_date: string }>(
-    `SELECT blocked_date::text
-     FROM blocked_dates
-     WHERE blocked_date = $1::date
-     LIMIT 1`,
-    [date],
-  );
-  if (blockedResult.rowCount) return [];
+    // Every day is bookable. Stored hours customize the standard 8–5 day.
+    const hours = availabilityResult.rows[0];
+    startTime = hours?.start_time || DEFAULT_OPEN_TIME;
+    endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
 
-  const dayStart = localDate.startOf("day").toUTC();
-  const dayEnd = localDate.endOf("day").toUTC();
-  const bookingsResult = await query<BookingRow>(
-    `SELECT starts_at, ends_at
-     FROM bookings
-     WHERE status <> 'cancelled'
-       AND starts_at < $2
-       AND ends_at > $1
-     ORDER BY starts_at ASC`,
-    [dayStart.toJSDate(), dayEnd.toJSDate()],
-  );
+    const blockedResult = await query<{ blocked_date: string }>(
+      `SELECT blocked_date
+       FROM blocked_dates
+       WHERE blocked_date = ?
+       LIMIT 1`,
+      [date],
+    );
+    if (blockedResult.rowCount) return [];
 
-  const [startHour, startMinute] = hours.start_time.split(":").map(Number);
-  const [endHour, endMinute] = hours.end_time.split(":").map(Number);
+    const dayStart = localDate.startOf("day").toUTC();
+    const dayEnd = localDate.endOf("day").toUTC();
+    const bookingsResult = await query<BookingRow>(
+      `SELECT starts_at, ends_at
+       FROM bookings
+       WHERE status <> 'cancelled'
+         AND starts_at < ?
+         AND ends_at > ?
+       ORDER BY starts_at ASC`,
+      [dayEnd.toISO(), dayStart.toISO()],
+    );
+    existingBookings = bookingsResult.rows;
+  } catch (error) {
+    // Availability should remain visible while the database is being provisioned
+    // or briefly unreachable. The booking endpoint still performs the definitive
+    // database insert, so it remains the final guard against double booking.
+    console.error("Using default availability because schedule storage is unavailable:", error);
+  }
+
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
 
   let cursor = localDate.set({ hour: startHour, minute: startMinute, second: 0, millisecond: 0 });
   const close = localDate.set({ hour: endHour, minute: endMinute, second: 0, millisecond: 0 });
@@ -71,9 +88,9 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     const slotStartUtc = cursor.toUTC();
     const slotEndUtc = slotEnd.toUTC();
 
-    const overlaps = bookingsResult.rows.some((booking) => {
-      const existingStart = DateTime.fromJSDate(booking.starts_at).toUTC();
-      const existingEnd = DateTime.fromJSDate(booking.ends_at).toUTC();
+    const overlaps = existingBookings.some((booking) => {
+      const existingStart = DateTime.fromISO(booking.starts_at, { setZone: true }).toUTC();
+      const existingEnd = DateTime.fromISO(booking.ends_at, { setZone: true }).toUTC();
       return slotStartUtc < existingEnd && slotEndUtc > existingStart;
     });
 

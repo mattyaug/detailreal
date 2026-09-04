@@ -8,14 +8,14 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="shell nav-wrap">
         <Link className="brand" href="/" aria-label={`${name} home`}>
-          <span className="brand-mark">PMD</span>
-          <span>{name}</span>
+          <span className="brand-mark">P</span>
+          <span className="brand-name">{name}</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">
           <a href="/#services">Services</a>
-          <a href="/#process">How it works</a>
+          <a href="/#process">Our process</a>
           <a href="/#service-area">Service area</a>
-          <Link className="button button-small" href="/book">Book now</Link>
+          <Link className="nav-book" href="/book">Book a detail <span>↗</span></Link>
         </nav>
         <a className="mobile-call" href={`tel:${phone.replace(/\D/g, "")}`}>Call</a>
       </div>
