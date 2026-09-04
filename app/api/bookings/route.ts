@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
 import { getService } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
-import { query } from "@/lib/db";
+import { execute } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -55,20 +55,29 @@ export async function POST(request: NextRequest) {
     const end = start.plus({ minutes: service.durationMinutes });
 
     try {
-      await query(
+      const result = await execute(
         `INSERT INTO bookings (
           id, customer_name, email, phone, address, city, vehicle,
           service_slug, service_name, price_cents, duration_minutes,
           starts_at, ends_at, status, notes
-        ) VALUES ($1,$2,$3,$4,$5,'Portland',$6,$7,$8,$9,$10,$11,$12,'confirmed',$13)`,
+        )
+        SELECT ?,?,?,?,?,'Portland',?,?,?,?,?,?,?,'confirmed',?
+        WHERE NOT EXISTS (
+          SELECT 1 FROM bookings
+          WHERE status <> 'cancelled' AND starts_at < ? AND ends_at > ?
+        )`,
         [
           id, customerName, email, phone, address, vehicle,
           service.slug, service.name, service.startingPriceCents, service.durationMinutes,
-          start.toUTC().toJSDate(), end.toUTC().toJSDate(), notes || null,
+          start.toUTC().toISO(), end.toUTC().toISO(), notes || null,
+          end.toUTC().toISO(), start.toUTC().toISO(),
         ],
       );
+      if (!result.rowCount) {
+        return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
+      }
     } catch (error: any) {
-      if (error?.constraint === "no_overlapping_active_bookings") {
+      if (error?.message?.includes("UNIQUE constraint failed")) {
         return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
       }
       throw error;

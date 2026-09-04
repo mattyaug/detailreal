@@ -1,28 +1,27 @@
 CREATE TABLE IF NOT EXISTS availability (
   weekday INTEGER PRIMARY KEY CHECK (weekday BETWEEN 0 AND 6),
-  start_time TIME NOT NULL DEFAULT '08:00',
-  end_time TIME NOT NULL DEFAULT '17:00',
-  is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  start_time TEXT NOT NULL DEFAULT '08:00',
+  end_time TEXT NOT NULL DEFAULT '17:00',
+  is_enabled INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO availability (weekday, start_time, end_time, is_enabled)
 VALUES
-  (0, '08:00', '17:00', TRUE),
-  (1, '08:00', '17:00', TRUE),
-  (2, '08:00', '17:00', TRUE),
-  (3, '08:00', '17:00', TRUE),
-  (4, '08:00', '17:00', TRUE),
-  (5, '08:00', '17:00', TRUE),
-  (6, '08:00', '17:00', TRUE)
-ON CONFLICT (weekday) DO UPDATE
-SET is_enabled = TRUE;
+  (0, '08:00', '17:00', 1),
+  (1, '08:00', '17:00', 1),
+  (2, '08:00', '17:00', 1),
+  (3, '08:00', '17:00', 1),
+  (4, '08:00', '17:00', 1),
+  (5, '08:00', '17:00', 1),
+  (6, '08:00', '17:00', 1)
+ON CONFLICT (weekday) DO UPDATE SET is_enabled = 1;
 
 CREATE TABLE IF NOT EXISTS blocked_dates (
-  id BIGSERIAL PRIMARY KEY,
-  blocked_date DATE NOT NULL UNIQUE,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  blocked_date TEXT NOT NULL UNIQUE,
   reason TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS bookings (
@@ -37,30 +36,13 @@ CREATE TABLE IF NOT EXISTS bookings (
   service_name TEXT NOT NULL,
   price_cents INTEGER NOT NULL,
   duration_minutes INTEGER NOT NULL,
-  starts_at TIMESTAMPTZ NOT NULL,
-  ends_at TIMESTAMPTZ NOT NULL,
-  status TEXT NOT NULL DEFAULT 'confirmed'
-    CHECK (status IN ('confirmed', 'completed', 'cancelled')),
+  starts_at TEXT NOT NULL,
+  ends_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'completed', 'cancelled')),
   notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX IF NOT EXISTS bookings_starts_at_idx ON bookings (starts_at);
 CREATE INDEX IF NOT EXISTS bookings_status_idx ON bookings (status);
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_constraint
-    WHERE conname = 'no_overlapping_active_bookings'
-  ) THEN
-    ALTER TABLE bookings
-    ADD CONSTRAINT no_overlapping_active_bookings
-    EXCLUDE USING gist (
-      tstzrange(starts_at, ends_at, '[)') WITH &&
-    )
-    WHERE (status <> 'cancelled');
-  END IF;
-END $$;

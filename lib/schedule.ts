@@ -15,8 +15,8 @@ const DEFAULT_OPEN_TIME = "08:00";
 const DEFAULT_CLOSE_TIME = "17:00";
 
 type BookingRow = {
-  starts_at: Date;
-  ends_at: Date;
+  starts_at: string;
+  ends_at: string;
 };
 
 export async function getAvailableSlots(date: string, durationMinutes: number) {
@@ -35,9 +35,9 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
 
   try {
     const availabilityResult = await query<AvailabilityRow>(
-      `SELECT weekday, start_time::text, end_time::text, is_enabled
+      `SELECT weekday, start_time, end_time, is_enabled
        FROM availability
-       WHERE weekday = $1
+       WHERE weekday = ?
        LIMIT 1`,
       [weekday],
     );
@@ -48,9 +48,9 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
 
     const blockedResult = await query<{ blocked_date: string }>(
-      `SELECT blocked_date::text
+      `SELECT blocked_date
        FROM blocked_dates
-       WHERE blocked_date = $1::date
+       WHERE blocked_date = ?
        LIMIT 1`,
       [date],
     );
@@ -62,10 +62,10 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
       `SELECT starts_at, ends_at
        FROM bookings
        WHERE status <> 'cancelled'
-         AND starts_at < $2
-         AND ends_at > $1
+         AND starts_at < ?
+         AND ends_at > ?
        ORDER BY starts_at ASC`,
-      [dayStart.toJSDate(), dayEnd.toJSDate()],
+      [dayEnd.toISO(), dayStart.toISO()],
     );
     existingBookings = bookingsResult.rows;
   } catch (error) {
@@ -89,8 +89,8 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     const slotEndUtc = slotEnd.toUTC();
 
     const overlaps = existingBookings.some((booking) => {
-      const existingStart = DateTime.fromJSDate(booking.starts_at).toUTC();
-      const existingEnd = DateTime.fromJSDate(booking.ends_at).toUTC();
+      const existingStart = DateTime.fromISO(booking.starts_at, { setZone: true }).toUTC();
+      const existingEnd = DateTime.fromISO(booking.ends_at, { setZone: true }).toUTC();
       return slotStartUtc < existingEnd && slotEndUtc > existingStart;
     });
 

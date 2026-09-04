@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { query, withTransaction } from "@/lib/db";
+import { executeBatch, query } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,10 +15,12 @@ export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
     const result = await query(
-      `SELECT weekday, start_time::text, end_time::text, is_enabled
+      `SELECT weekday, start_time, end_time, is_enabled
        FROM availability ORDER BY weekday ASC`,
     );
-    return NextResponse.json({ availability: result.rows });
+    return NextResponse.json({
+      availability: result.rows.map((row: any) => ({ ...row, is_enabled: Boolean(row.is_enabled) })),
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to load hours." }, { status: 500 });
@@ -41,20 +43,17 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    await withTransaction(async (client) => {
-      for (const row of rows) {
-        await client.query(
+    await executeBatch(rows.map((row) => ({
+          sql:
           `INSERT INTO availability (weekday, start_time, end_time, is_enabled, updated_at)
-           VALUES ($1,$2,$3,$4,NOW())
+           VALUES (?,?,?,?,CURRENT_TIMESTAMP)
            ON CONFLICT (weekday) DO UPDATE SET
              start_time = EXCLUDED.start_time,
              end_time = EXCLUDED.end_time,
              is_enabled = EXCLUDED.is_enabled,
-             updated_at = NOW()`,
-          [row.weekday, row.start_time, row.end_time, row.is_enabled],
-        );
-      }
-    });
+             updated_at = CURRENT_TIMESTAMP`,
+          params: [row.weekday, row.start_time, row.end_time, row.is_enabled ? 1 : 0],
+        })));
 
     return NextResponse.json({ ok: true });
   } catch (error) {
