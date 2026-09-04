@@ -11,6 +11,9 @@ type AvailabilityRow = {
   is_enabled: boolean;
 };
 
+const DEFAULT_OPEN_TIME = "08:00";
+const DEFAULT_CLOSE_TIME = "17:00";
+
 type BookingRow = {
   starts_at: Date;
   ends_at: Date;
@@ -34,8 +37,12 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     [weekday],
   );
 
+  // Every day is bookable. Keep the stored hours when present, but fall back to
+  // a full standard day so a missing or previously-disabled row cannot make the
+  // customer-facing scheduler appear empty.
   const hours = availabilityResult.rows[0];
-  if (!hours?.is_enabled) return [];
+  const startTime = hours?.start_time || DEFAULT_OPEN_TIME;
+  const endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
 
   const blockedResult = await query<{ blocked_date: string }>(
     `SELECT blocked_date::text
@@ -58,8 +65,8 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     [dayStart.toJSDate(), dayEnd.toJSDate()],
   );
 
-  const [startHour, startMinute] = hours.start_time.split(":").map(Number);
-  const [endHour, endMinute] = hours.end_time.split(":").map(Number);
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
 
   let cursor = localDate.set({ hour: startHour, minute: startMinute, second: 0, millisecond: 0 });
   const close = localDate.set({ hour: endHour, minute: endMinute, second: 0, millisecond: 0 });

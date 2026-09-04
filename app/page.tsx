@@ -3,72 +3,94 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { SERVICES, formatPrice } from "@/lib/services";
 
+const packageNumbers = ["01", "02", "03", "04"];
+
 export default function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main>
-        <section className="hero">
-          <div className="shell hero-grid">
-            <div className="hero-copy">
-              <span className="eyebrow">Mobile detailing • Portland, Texas</span>
-              <h1>Professional car care, right in your driveway.</h1>
-              <p className="hero-lede">Skip the shop. Pick your service, choose an available time, and get your vehicle detailed at home or work.</p>
-              <div className="hero-actions">
-                <Link className="button" href="/book">Check availability</Link>
-                <a className="button button-ghost" href="#services">View services</a>
-              </div>
-              <div className="trust-row"><span>✓ Online booking</span><span>✓ Mobile service</span><span>✓ Local to Portland</span></div>
+      <main className="home">
+        <section className="film-hero">
+          <video
+            className="hero-film"
+            autoPlay
+            muted
+            loop
+            playsInline
+            poster="/detail-studio.svg"
+            aria-label="A freshly detailed car being finished by hand"
+          >
+            <source src="https://videos.pexels.com/video-files/4488706/4488706-hd_1920_1080_25fps.mp4" type="video/mp4" />
+          </video>
+          <div className="film-shade" />
+          <div className="film-copy shell">
+            <p className="kicker">Portland, Texas · Mobile auto care</p>
+            <h1>A better clean.<br /><em>At your curb.</em></h1>
+            <div className="hero-bottom">
+              <p>Thoughtful detailing for cars that are driven, lived in, and worth looking after.</p>
+              <Link className="red-button" href="/book">Schedule a detail <span>↗</span></Link>
             </div>
-            <div className="hero-placeholder" aria-label="Future detailing image area">
-              <div className="placeholder-badge">Your photos go here next</div>
-              <div className="car-silhouette">✦</div>
-              <p>Built to swap in before/after photos without changing the layout.</p>
-            </div>
+          </div>
+          <a className="scroll-note" href="#services"><span>Scroll</span><i /></a>
+        </section>
+
+        <section className="intro-strip">
+          <div className="shell intro-grid">
+            <p className="section-index">01 / What we do</p>
+            <h2>Good detailing is less about shine—more about <em>care.</em></h2>
+            <p className="intro-copy">We bring the setup to you and take our time with the details: seams, glass, trim, wheels, and all the places quick washes miss.</p>
           </div>
         </section>
 
-        <section className="section" id="services">
+        <section className="packages" id="services">
           <div className="shell">
-            <div className="section-heading">
-              <span className="eyebrow">Services</span>
-              <h2>Choose the level of clean your vehicle needs.</h2>
-              <p>Starter pricing is centralized in one file so you can change it before launch.</p>
+            <div className="package-heading">
+              <p className="section-index">02 / Services</p>
+              <h2>Pick your reset.</h2>
+              <p>Clear packages. Honest starting prices. No mystery menu.</p>
             </div>
-            <div className="card-grid">
-              {SERVICES.map((service) => (
-                <article className="service-card" key={service.slug}>
-                  <div className="service-icon">✦</div>
-                  <h3>{service.name}</h3>
-                  <p>{service.description}</p>
-                  <div className="service-meta"><strong>From {formatPrice(service.startingPriceCents)}</strong><span>~{service.durationMinutes / 60} hr{service.durationMinutes > 60 ? "s" : ""}</span></div>
-                  <Link href={`/book?service=${service.slug}`}>Book this service →</Link>
-                </article>
+            <div className="package-list">
+              {SERVICES.map((service, index) => (
+                <Link className="package-row" href={`/book?service=${service.slug}`} key={service.slug}>
+                  <span className="package-no">{packageNumbers[index]}</span>
+                  <div><h3>{service.name}</h3><p>{service.description}</p></div>
+                  <div className="package-price"><small>from</small><strong>{formatPrice(service.startingPriceCents)}</strong></div>
+                  <span className="package-time">{service.durationMinutes / 60} hr{service.durationMinutes > 60 ? "s" : ""}</span>
+                  <span className="circle-arrow">↗</span>
+                </Link>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="section section-alt" id="process">
-          <div className="shell">
-            <div className="section-heading"><span className="eyebrow">Simple scheduling</span><h2>Three steps. No back-and-forth texts.</h2></div>
-            <div className="steps">
-              <div><span>01</span><h3>Pick a service</h3><p>Choose the detail package that fits your vehicle.</p></div>
-              <div><span>02</span><h3>Choose a live time</h3><p>The scheduler only shows slots that are actually available.</p></div>
-              <div><span>03</span><h3>We come to you</h3><p>Add your address and vehicle information so the appointment is ready to go.</p></div>
+        <section className="manifesto" id="process">
+          <div className="shell manifesto-grid">
+            <div className="manifesto-image" role="img" aria-label="Clean black car bodywork and wheel" />
+            <div className="manifesto-copy">
+              <p className="section-index">03 / The difference</p>
+              <h2>We come prepared. You get your day back.</h2>
+              <div className="principles">
+                <div><span>01</span><h3>Book online</h3><p>Choose a package and a live appointment time. That’s it.</p></div>
+                <div><span>02</span><h3>We show up</h3><p>At your home or workplace with the tools for the job.</p></div>
+                <div><span>03</span><h3>Drive happy</h3><p>Walk around it with us, then enjoy the clean-car feeling.</p></div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="section" id="service-area">
-          <div className="shell split-panel">
-            <div><span className="eyebrow">Service area</span><h2>Based in Portland, TX.</h2><p>Launch copy currently focuses on Portland. Nearby cities can be added once you confirm your travel radius and any trip fees.</p></div>
-            <div className="area-box"><strong>Primary area</strong><span>Portland, Texas</span><small>San Patricio County / Coastal Bend</small></div>
+        <section className="local-section" id="service-area">
+          <div className="shell local-grid">
+            <p className="section-index">04 / Local service</p>
+            <div><h2>Made for the<br />Coastal Bend.</h2><p>Based in Portland and serving the surrounding community. Not sure if you’re in range? Give us a call.</p></div>
+            <div className="location-stamp"><span>27.8778° N</span><b>PORTLAND</b><span>97.3239° W</span></div>
           </div>
         </section>
 
-        <section className="cta-section">
-          <div className="shell cta-box"><div><span className="eyebrow">Ready when you are</span><h2>See the next available appointment.</h2></div><Link className="button button-light" href="/book">Book your detail</Link></div>
+        <section className="book-banner">
+          <div className="shell">
+            <p>Ready for a reset?</p>
+            <Link href="/book">Book your detail <span>↗</span></Link>
+          </div>
         </section>
       </main>
       <SiteFooter />
