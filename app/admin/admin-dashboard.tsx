@@ -174,9 +174,9 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
                     {hours.map((row) => (
                       <div className="hours-row" key={row.weekday}>
                         <strong>{DAY_NAMES[row.weekday]}</strong>
-                        <input className="input" type="time" value={row.start_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "start_time", e.target.value)} disabled={!row.is_enabled} />
-                        <input className="input" type="time" value={row.end_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "end_time", e.target.value)} disabled={!row.is_enabled} />
-                        <label className="help"><input type="checkbox" checked={row.is_enabled} onChange={(e) => updateHour(row.weekday, "is_enabled", e.target.checked)} /> Open</label>
+                        <input className="input" type="time" value={row.start_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "start_time", e.target.value)} />
+                        <input className="input" type="time" value={row.end_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "end_time", e.target.value)} />
+                        <span className="day-open">Open</span>
                       </div>
                     ))}
                   </div>

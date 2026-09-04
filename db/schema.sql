@@ -15,7 +15,8 @@ VALUES
   (4, '08:00', '17:00', TRUE),
   (5, '08:00', '17:00', TRUE),
   (6, '08:00', '17:00', TRUE)
-ON CONFLICT (weekday) DO NOTHING;
+ON CONFLICT (weekday) DO UPDATE
+SET is_enabled = TRUE;
 
 CREATE TABLE IF NOT EXISTS blocked_dates (
   id BIGSERIAL PRIMARY KEY,
