@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="shell footer-grid">
         <div>
-          <div className="brand footer-brand"><span className="brand-mark">PMD</span><span>{name}</span></div>
+          <div className="brand footer-brand"><span className="brand-mark">P</span><span>{name}</span></div>
           <p>Mobile auto detailing serving Portland, Texas and nearby communities.</p>
         </div>
         <div>

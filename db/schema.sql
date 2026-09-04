@@ -8,14 +8,15 @@ CREATE TABLE IF NOT EXISTS availability (
 
 INSERT INTO availability (weekday, start_time, end_time, is_enabled)
 VALUES
-  (0, '08:00', '17:00', FALSE),
+  (0, '08:00', '17:00', TRUE),
   (1, '08:00', '17:00', TRUE),
   (2, '08:00', '17:00', TRUE),
   (3, '08:00', '17:00', TRUE),
   (4, '08:00', '17:00', TRUE),
   (5, '08:00', '17:00', TRUE),
   (6, '08:00', '17:00', TRUE)
-ON CONFLICT (weekday) DO NOTHING;
+ON CONFLICT (weekday) DO UPDATE
+SET is_enabled = TRUE;
 
 CREATE TABLE IF NOT EXISTS blocked_dates (
   id BIGSERIAL PRIMARY KEY,

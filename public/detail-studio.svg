@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#17191a"/><stop offset=".52" stop-color="#3d4141"/><stop offset="1" stop-color="#0d0f10"/></linearGradient>
+    <linearGradient id="car" x2=".7" y2="1"><stop stop-color="#777d7e"/><stop offset=".22" stop-color="#1b1e20"/><stop offset=".75" stop-color="#050607"/><stop offset="1" stop-color="#343839"/></linearGradient>
+    <radialGradient id="shine"><stop stop-color="#fff" stop-opacity=".72"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="24"/></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect y="650" width="1600" height="250" fill="#0a0b0b"/>
+  <ellipse cx="790" cy="750" rx="690" ry="88" fill="#000" opacity=".7" filter="url(#blur)"/>
+  <path d="M86 630 Q190 480 372 440 L558 264 Q620 205 777 190 L1117 197 Q1224 207 1302 330 L1400 485 Q1517 521 1550 633 L1526 705 L98 700Z" fill="url(#car)"/>
+  <path d="M420 429 592 274 Q635 240 770 230 L1097 237 Q1163 248 1232 363Z" fill="#080b0d"/>
+  <path d="m805 233 16 184-381 8 162-148q40-35 165-43Z" fill="#222a2d"/>
+  <path d="m840 234 273 8q62 17 117 119l-373 52Z" fill="#151b1d"/>
+  <path d="M111 602q425-84 869-68 358 13 553 83" fill="none" stroke="#aeb3b1" stroke-opacity=".55" stroke-width="5"/>
+  <ellipse cx="376" cy="670" rx="145" ry="143" fill="#070808"/><ellipse cx="376" cy="670" rx="86" ry="85" fill="#353a3a"/><circle cx="376" cy="670" r="29" fill="#111"/>
+  <ellipse cx="1255" cy="670" rx="145" ry="143" fill="#070808"/><ellipse cx="1255" cy="670" rx="86" ry="85" fill="#353a3a"/><circle cx="1255" cy="670" r="29" fill="#111"/>
+  <ellipse cx="1180" cy="270" rx="520" ry="180" fill="url(#shine)" opacity=".3" transform="rotate(-9 1180 270)"/>
+  <g fill="#fff" opacity=".34"><circle cx="155" cy="225" r="7"/><circle cx="263" cy="126" r="4"/><circle cx="1329" cy="129" r="7"/><circle cx="1452" cy="319" r="4"/><circle cx="984" cy="95" r="3"/></g>
+</svg>
