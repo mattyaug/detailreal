@@ -3,7 +3,7 @@ import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
 import { getService } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
-import { execute } from "@/lib/db";
+import { execute, isBookingConflict } from "@/lib/db";
 
 export const runtime = "nodejs";
 
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       if (!result.rowCount) {
         return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
       }
-    } catch (error: any) {
-      if (error?.message?.includes("UNIQUE constraint failed")) {
+    } catch (error: unknown) {
+      if (isBookingConflict(error)) {
         return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
       }
       throw error;
