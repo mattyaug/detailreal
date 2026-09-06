@@ -15,7 +15,7 @@ VALUES
   (4, '08:00', '17:00', 1),
   (5, '08:00', '17:00', 1),
   (6, '08:00', '17:00', 1)
-ON CONFLICT (weekday) DO UPDATE SET is_enabled = 1;
+ON CONFLICT (weekday) DO NOTHING;
 
 CREATE TABLE IF NOT EXISTS blocked_dates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
