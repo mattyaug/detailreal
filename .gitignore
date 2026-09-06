@@ -12,3 +12,8 @@ node_modules/
 # OS and editor files
 .DS_Store
 *.log
+
+.open-next/
+*.tsbuildinfo
+*.sqlite*
+*backup*.sql
