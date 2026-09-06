@@ -5,6 +5,8 @@ import { getService } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
 import { execute, isBookingConflict } from "@/lib/db";
 
+import { sendBookingEmails } from "@/lib/booking-email";
+
 export const runtime = "nodejs";
 
 type BookingInput = {
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     const service = getService(clean(body.serviceSlug, 80));
     const startsAt = clean(body.startsAt, 80);
 
-    if (!customerName || !email.includes("@") || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
+    if (!customerName || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
       return NextResponse.json({ error: "Complete all required booking fields." }, { status: 400 });
     }
 
@@ -83,8 +85,21 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    let emailAccepted = false;
+    try {
+      const delivery = await sendBookingEmails({
+        id, email,
+        serviceName: service.name, startsAt: start.toUTC().toISO()!,
+        durationMinutes: service.durationMinutes,
+      });
+      emailAccepted = delivery.customer;
+    } catch {
+      console.error("Booking saved but email notification failed", { bookingId: id });
+    }
+
     return NextResponse.json({
       ok: true,
+      emailAccepted,
       booking: { id, serviceName: service.name, startsAt: start.toISO() },
     }, { status: 201 });
   } catch (error) {
