@@ -26,8 +26,8 @@ export default async function BookPage({
         <section className="page-hero booking-hero">
           <div className="shell">
             <span className="eyebrow">Book online / Live availability</span>
-            <h1>Book your mobile detail.</h1>
-            <p>Choose a service, pick a day from the menu, and reserve a live appointment time. We&apos;ll come to you.</p>
+            <h1>Book your Nueces detail.</h1>
+            <p>Choose a service, pick a day from the menu, and reserve a live appointment time. We&apos;ll come to you. Water and electricity access is required.</p>
           </div>
         </section>
         <BookingForm initialService={initialService!} />

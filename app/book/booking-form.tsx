@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { SERVICES, formatPrice } from "@/lib/services";
+import { SERVICES, ADD_ONS, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
 
 type BookingResponse = {
   ok?: boolean;
+  emailAccepted?: boolean;
   booking?: { id: string; serviceName: string; startsAt: string };
   error?: string;
 };
@@ -35,18 +36,24 @@ function bookableDates() {
 
 export function BookingForm({ initialService }: { initialService: string }) {
   const [serviceSlug, setServiceSlug] = useState(initialService);
+  const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
+  const [utilitiesConfirmed, setUtilitiesConfirmed] = useState(false);
+  const addOns = useMemo(() => priceAddOns(addOnSelections), [addOnSelections]);
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedTime, setSelectedTime] = useState("");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [emailAccepted, setEmailAccepted] = useState(false);
   const [confirmation, setConfirmation] = useState<BookingResponse["booking"]>();
 
   const service = useMemo(
     () => SERVICES.find((item) => item.slug === serviceSlug) ?? SERVICES[0],
     [serviceSlug],
   );
+  const totalPrice = service.startingPriceCents + addOns.priceCents;
+  const totalMinutes = service.durationMinutes + addOns.durationMinutes;
   const dates = useMemo(bookableDates, []);
 
   useEffect(() => {
@@ -58,7 +65,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
     const controller = new AbortController();
     setLoadingSlots(true);
 
-    fetch(`/api/availability?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service.slug)}`, {
+    fetch(`/api/availability?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service.slug)}&addOns=${encodeURIComponent(JSON.stringify(addOnSelections))}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -72,13 +79,14 @@ export function BookingForm({ initialService }: { initialService: string }) {
       .finally(() => setLoadingSlots(false));
 
     return () => controller.abort();
-  }, [date, service]);
+  }, [date, service, addOnSelections]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setConfirmation(undefined);
 
+    if (!utilitiesConfirmed) { setError("Confirm access to water and electricity before booking."); return; }
     if (!selectedTime) {
       setError("Choose an available appointment time first.");
       return;
@@ -93,14 +101,17 @@ export function BookingForm({ initialService }: { initialService: string }) {
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, serviceSlug, startsAt: selectedTime }),
+        body: JSON.stringify({ ...payload, serviceSlug, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed }),
       });
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");
       setConfirmation(data.booking);
+      setEmailAccepted(data.emailAccepted === true);
       setSelectedTime("");
       setSlots([]);
       setDate("");
+      setAddOnSelections([]);
+      setUtilitiesConfirmed(false);
       formElement.reset();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to book this appointment.");
@@ -115,9 +126,10 @@ export function BookingForm({ initialService }: { initialService: string }) {
         <span className="eyebrow">01 / Your detail</span>
         <h2>{service.name}</h2>
         <p>{service.description}</p>
+        <ul className="service-inclusions">{service.includes.map((item) => <li key={item}>{item}</li>)}</ul>
         <div className="summary-list">
-          <div className="summary-item"><span>Starting price</span><strong>{formatPrice(service.startingPriceCents)}</strong></div>
-          <div className="summary-item"><span>Estimated time</span><strong>{Math.round(service.durationMinutes / 30) / 2} hrs</strong></div>
+          <div className="summary-item"><span>Starting total with add-ons</span><strong>{formatPrice(totalPrice)}</strong></div>
+          <div className="summary-item"><span>Estimated time</span><strong>{totalMinutes / 60} hrs</strong></div>
           <div className="summary-item"><span>Location</span><strong>Portland, TX</strong></div>
         </div>
         <div className="info-box">Final price may vary based on vehicle size and condition. We&apos;ll confirm everything before work begins.</div>
@@ -130,6 +142,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
         {confirmation && (
           <div className="success-box">
             Booking confirmed. Reference <strong>{confirmation.id.slice(0, 8).toUpperCase()}</strong>. Your {confirmation.serviceName} is scheduled for {new Date(confirmation.startsAt).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "long", timeStyle: "short" })}.
+            <p>{emailAccepted ? "Your confirmation email has been submitted for delivery. Please check your inbox and spam folder." : "Your appointment is saved, but we could not send the confirmation email. Keep this reference; you do not need to book again."}</p>
           </div>
         )}
         {error && <div className="error-box">{error}</div>}
@@ -141,6 +154,9 @@ export function BookingForm({ initialService }: { initialService: string }) {
               {SERVICES.map((item) => <option key={item.slug} value={item.slug}>{item.name} — from {formatPrice(item.startingPriceCents)}</option>)}
             </select>
           </div>
+          <fieldset className="field full" style={{ border: 0, padding: 0, margin: 0 }}><legend>Add-ons (optional)</legend>
+            {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.priceCents)}{item.slug === "headlight" ? " each" : ""}<small>{item.description} Adds {item.durationMinutes} minutes per selection.</small></span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
+          </fieldset>
           <div className="field full">
             <label htmlFor="date">Choose a date</label>
             <select id="date" name="date" className="select date-menu" value={date} onChange={(e) => setDate(e.target.value)} required>
@@ -168,9 +184,10 @@ export function BookingForm({ initialService }: { initialService: string }) {
           <div className="honeypot" aria-hidden="true"><label htmlFor="company">Company</label><input id="company" name="company" tabIndex={-1} autoComplete="off" /></div>
         </div>
 
+        <label className="utility-confirmation"><input type="checkbox" required checked={utilitiesConfirmed} onChange={(event) => setUtilitiesConfirmed(event.target.checked)} /><span>I confirm there will be access to water and electricity at the appointment location.</span></label>
         <div className="form-actions">
           <span className="help">Submitting reserves the selected time immediately.</span>
-          <button className="button" disabled={submitting || !selectedTime}>{submitting ? "Booking…" : "Confirm appointment"}</button>
+          <button className="button" disabled={submitting || !selectedTime || !utilitiesConfirmed}>{submitting ? "Booking…" : "Confirm appointment"}</button>
         </div>
       </form>
     </section>

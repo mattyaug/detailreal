@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
-import { getService } from "@/lib/services";
+import { getService, priceAddOns } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
 import { execute, isBookingConflict } from "@/lib/db";
+
+import { sendBookingEmails } from "@/lib/booking-email";
 
 export const runtime = "nodejs";
 
@@ -17,6 +19,8 @@ type BookingInput = {
   company?: string;
   serviceSlug?: string;
   startsAt?: string;
+  addOns?: unknown;
+  utilitiesConfirmed?: boolean;
 };
 
 function clean(value: unknown, max = 500) {
@@ -28,6 +32,10 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as BookingInput;
     if (clean(body.company)) return NextResponse.json({ ok: true });
 
+    if (body.utilitiesConfirmed !== true) return NextResponse.json({ error: "Confirm access to water and electricity before booking." }, { status: 400 });
+    let addOns;
+    try { addOns = priceAddOns(body.addOns ?? []); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
+
     const customerName = clean(body.customerName, 120);
     const email = clean(body.email, 180).toLowerCase();
     const phone = clean(body.phone, 40);
@@ -37,22 +45,26 @@ export async function POST(request: NextRequest) {
     const service = getService(clean(body.serviceSlug, 80));
     const startsAt = clean(body.startsAt, 80);
 
-    if (!customerName || !email.includes("@") || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
+    if (!customerName || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
       return NextResponse.json({ error: "Complete all required booking fields." }, { status: 400 });
     }
 
     const start = DateTime.fromISO(startsAt, { setZone: true }).setZone(BUSINESS_TIME_ZONE);
     if (!start.isValid) return NextResponse.json({ error: "Choose a valid appointment time." }, { status: 400 });
 
+    const durationMinutes = service.durationMinutes + addOns.durationMinutes;
+    const priceCents = service.startingPriceCents + addOns.priceCents;
+    const serviceName = service.name + (addOns.summary ? ` + ${addOns.summary}` : "");
+    const bookingNotes = `${notes}${notes ? "\n\n" : ""}Water and electricity access confirmed.${addOns.summary ? `\nAdd-ons: ${addOns.summary}` : ""}`;
     const localDate = start.toFormat("yyyy-MM-dd");
-    const available = await getAvailableSlots(localDate, service.durationMinutes);
+    const available = await getAvailableSlots(localDate, durationMinutes);
     const stillAvailable = available.some((slot) => slot.value === start.toISO());
     if (!stillAvailable) {
       return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
     }
 
     const id = randomUUID();
-    const end = start.plus({ minutes: service.durationMinutes });
+    const end = start.plus({ minutes: durationMinutes });
 
     try {
       const result = await execute(
@@ -68,8 +80,8 @@ export async function POST(request: NextRequest) {
         )`,
         [
           id, customerName, email, phone, address, vehicle,
-          service.slug, service.name, service.startingPriceCents, service.durationMinutes,
-          start.toUTC().toISO(), end.toUTC().toISO(), notes || null,
+          service.slug, serviceName, priceCents, durationMinutes,
+          start.toUTC().toISO(), end.toUTC().toISO(), bookingNotes,
           end.toUTC().toISO(), start.toUTC().toISO(),
         ],
       );
@@ -83,9 +95,22 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    let emailAccepted = false;
+    try {
+      const delivery = await sendBookingEmails({
+        id, email,
+        serviceName, startsAt: start.toUTC().toISO()!,
+        durationMinutes,
+      });
+      emailAccepted = delivery.customer;
+    } catch {
+      console.error("Booking saved but email notification failed", { bookingId: id });
+    }
+
     return NextResponse.json({
       ok: true,
-      booking: { id, serviceName: service.name, startsAt: start.toISO() },
+      emailAccepted,
+      booking: { id, serviceName, startsAt: start.toISO() },
     }, { status: 201 });
   } catch (error) {
     console.error(error);

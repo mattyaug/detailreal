@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { SERVICES, formatPrice } from "@/lib/services";
+import { SERVICES, ADD_ONS, formatPrice } from "@/lib/services";
 
 const packageNumbers = ["01", "02", "03", "04"];
 
@@ -24,11 +24,11 @@ export default function HomePage() {
           </video>
           <div className="film-shade" />
           <div className="film-copy shell">
-            <p className="kicker">Portland, Texas · Mobile auto care</p>
+            <p className="kicker">Nueces Detail · Portland, Texas</p>
             <h1>A better clean.<br /><em>At your curb.</em></h1>
             <div className="hero-bottom">
-              <p>Thoughtful detailing for cars that are driven, lived in, and worth looking after.</p>
-              <Link className="red-button" href="/book">Schedule a detail <span>↗</span></Link>
+              <p>Industrial-grade Koch-Chemie exterior care. A complete interior reset. At your curb.</p>
+              <Link className="brand-button" href="/book">Schedule a detail <span>↗</span></Link>
             </div>
           </div>
           <a className="scroll-note" href="#services"><span>Scroll</span><i /></a>
@@ -53,13 +53,14 @@ export default function HomePage() {
               {SERVICES.map((service, index) => (
                 <Link className="package-row" href={`/book?service=${service.slug}`} key={service.slug}>
                   <span className="package-no">{packageNumbers[index]}</span>
-                  <div><h3>{service.name}</h3><p>{service.description}</p></div>
+                  <div><h3>{service.name}</h3><p>{service.description}</p><ul className="service-inclusions">{service.includes.map((item) => <li key={item}>{item}</li>)}</ul></div>
                   <div className="package-price"><small>from</small><strong>{formatPrice(service.startingPriceCents)}</strong></div>
                   <span className="package-time">{service.durationMinutes / 60} hr{service.durationMinutes > 60 ? "s" : ""}</span>
                   <span className="circle-arrow">↗</span>
                 </Link>
               ))}
             </div>
+            <div className="addon-catalog"><h3>Add to your detail</h3><ul>{ADD_ONS.map((item) => <li key={item.slug}><strong>{item.name} — {formatPrice(item.priceCents)}{item.slug === "headlight" ? " each" : ""}</strong><p>{item.description}</p></li>)}</ul></div>
           </div>
         </section>
 
@@ -71,7 +72,7 @@ export default function HomePage() {
               <h2>We come prepared. You get your day back.</h2>
               <div className="principles">
                 <div><span>01</span><h3>Book online</h3><p>Choose a package and a live appointment time. That’s it.</p></div>
-                <div><span>02</span><h3>We show up</h3><p>At your home or workplace with the tools for the job.</p></div>
+                <div><span>02</span><h3>We show up</h3><p>At your home or workplace with the tools for the job. Please provide access to water and electricity.</p></div>
                 <div><span>03</span><h3>Drive happy</h3><p>Walk around it with us, then enjoy the clean-car feeling.</p></div>
               </div>
             </div>
