@@ -7,6 +7,7 @@ type Slot = { value: string; label: string };
 
 type BookingResponse = {
   ok?: boolean;
+  emailAccepted?: boolean;
   booking?: { id: string; serviceName: string; startsAt: string };
   error?: string;
 };
@@ -41,6 +42,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [emailAccepted, setEmailAccepted] = useState(false);
   const [confirmation, setConfirmation] = useState<BookingResponse["booking"]>();
 
   const service = useMemo(
@@ -98,6 +100,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");
       setConfirmation(data.booking);
+      setEmailAccepted(data.emailAccepted === true);
       setSelectedTime("");
       setSlots([]);
       setDate("");
@@ -130,6 +133,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
         {confirmation && (
           <div className="success-box">
             Booking confirmed. Reference <strong>{confirmation.id.slice(0, 8).toUpperCase()}</strong>. Your {confirmation.serviceName} is scheduled for {new Date(confirmation.startsAt).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "long", timeStyle: "short" })}.
+            <p>{emailAccepted ? "Your confirmation email has been submitted for delivery. Please check your inbox and spam folder." : "Your appointment is saved, but we could not send the confirmation email. Keep this reference; you do not need to book again."}</p>
           </div>
         )}
         {error && <div className="error-box">{error}</div>}
