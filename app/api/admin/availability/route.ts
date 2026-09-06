@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     const rows = Array.isArray(body.availability) ? body.availability as HoursInput[] : [];
-    if (rows.length !== 7) return NextResponse.json({ error: "All seven weekdays are required." }, { status: 400 });
+    if (rows.length !== 7 || new Set(rows.map((row) => row.weekday)).size !== 7) return NextResponse.json({ error: "All seven weekdays are required." }, { status: 400 });
 
     for (const row of rows) {
       if (!Number.isInteger(row.weekday) || (row.weekday as number) < 0 || (row.weekday as number) > 6 || !validTime(row.start_time) || !validTime(row.end_time) || typeof row.is_enabled !== "boolean") {

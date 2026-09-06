@@ -11,8 +11,9 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "detailreal-db",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID"
+      "database_name": "detail",
+      "database_id": "cb722886-4656-4c79-bc00-3f3d8eb4398d",
+      "migrations_dir": "migrations"
     }
   ],
   "observability": {

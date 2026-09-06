@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { execute, query } from "@/lib/db";
+import { execute, query, isBookingConflict } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function GET() {
       `SELECT id, customer_name, email, phone, address, vehicle, service_name,
               starts_at, ends_at, status, notes
        FROM bookings
-       WHERE starts_at >= datetime('now', '-1 day')
+       WHERE starts_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')
        ORDER BY starts_at ASC
        LIMIT 150`,
     );
@@ -43,8 +43,8 @@ export async function PATCH(request: NextRequest) {
         [status, id],
       );
       if (!result.rowCount) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
-    } catch (error: any) {
-      if (error?.constraint === "no_overlapping_active_bookings") {
+    } catch (error: unknown) {
+      if (isBookingConflict(error)) {
         return NextResponse.json({ error: "This booking overlaps another active appointment and cannot be restored." }, { status: 409 });
       }
       throw error;
