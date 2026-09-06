@@ -7,7 +7,7 @@ test('customer and owner get separate messages with Central time and appropriate
  const m=bookingMessages(booking,config.from);
  assert.deepEqual(m.customer.to,['customer@example.com']);
  assert.deepEqual(m.owner.to,['matthewdaguinaldo@gmail.com']);
- assert.equal(m.customer.reply_to,'matthewdaguinaldo@gmail.com');
+ assert.equal(m.customer.reply_to,'contact@nuecesdetail.com');
  assert.equal(m.owner.reply_to,'customer@example.com');
  assert.match(m.customer.text,/10:00 AM \(Central Time\)/);
  assert.doesNotMatch(m.owner.text,/Access note|5551234567|123 Test St|Test Car/);
