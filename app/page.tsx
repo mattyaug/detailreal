@@ -27,7 +27,7 @@ export default function HomePage() {
             <p className="kicker">Nueces Detail · Portland, Texas</p>
             <h1>A better clean.<br /><em>At your curb.</em></h1>
             <div className="hero-bottom">
-              <p>Industrial-grade Koch-Chemie exterior care. A complete interior reset. At your curb.</p>
+              <p>From a carefully washed and protected exterior to a thoroughly refreshed cabin, we bring professional detailing to your driveway.</p>
               <Link className="brand-button" href="/book">Schedule a detail <span>↗</span></Link>
             </div>
           </div>
@@ -38,7 +38,7 @@ export default function HomePage() {
           <div className="shell intro-grid">
             <p className="section-index">01 / What we do</p>
             <h2>Good detailing is less about shine—more about <em>care.</em></h2>
-            <p className="intro-copy">We bring the setup to you and take our time with the details: seams, glass, trim, wheels, and all the places quick washes miss.</p>
+            <p className="intro-copy">We bring our equipment and a careful approach to every appointment, giving your paintwork, cabin, and often-overlooked areas the attention they deserve.</p>
           </div>
         </section>
 
