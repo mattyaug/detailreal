@@ -6,12 +6,17 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "db:init": "wrangler d1 execute detailreal-db --local --file=./db/schema.sql",
-    "db:init:remote": "wrangler d1 execute detailreal-db --remote --file=./db/schema.sql",
+    "db:init": "npm run db:migrate",
+    "db:init:remote": "npm run db:migrate:remote",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:migrate": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "db:status": "wrangler d1 migrations list DB --remote",
+    "typecheck": "tsc --noEmit",
+    "test:db": "node --test tests/database.test.mjs"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",
