@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 export function SiteHeader() {
-  const name = process.env.NEXT_PUBLIC_BUSINESS_NAME || "Portland Mobile Detailing";
+  const name = "Nueces Detail";
   const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || "(361) 555-0100";
 
   return (
     <header className="site-header">
       <div className="shell nav-wrap">
         <Link className="brand" href="/" aria-label={`${name} home`}>
-          <span className="brand-mark">P</span>
+          <img className="brand-logo" src="/nueces-detail-logo.png" alt="Nueces Detail" width={72} height={72} />
           <span className="brand-name">{name}</span>
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">

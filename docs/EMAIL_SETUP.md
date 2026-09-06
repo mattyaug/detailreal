@@ -5,13 +5,13 @@ Every new successful booking attempts two separate emails: a confirmation to the
 ## 1. Create your Resend account and verify your domain
 
 1. Sign up at https://resend.com/.
-2. Open **Domains** and add a domain you own, or a sending subdomain such as `mail.yourdomain.com`.
+2. Open **Domains** and add a domain you own, or a sending subdomain such as `mail.nuecesdetail.com`.
 3. Resend will show DNS records to add. In your domain's DNS dashboard (Cloudflare if it manages your DNS), add exactly the names, types, and values Resend supplies.
 4. Return to Resend and verify the domain. Wait for its status to show verified.
 
 You cannot verify `gmail.com`; your Gmail address is the notification recipient and reply address, not the sender. The Resend testing sender cannot deliver confirmations to arbitrary customers. Use a verified domain before testing with customers.
 
-Choose a sender on that domain, for example `Portland Mobile Detailing <bookings@mail.yourdomain.com>`. Replace the example with your actual verified domain. Replies to customer confirmations are directed to matthewdaguinaldo@gmail.com, so this sender does not need an inbox for replies.
+For nuecesdetail.com, verify the sending subdomain `mail.nuecesdetail.com` and use `Nueces Detail <bookings@mail.nuecesdetail.com>`. Use `Nueces Detail <bookings@mail.nuecesdetail.com>` as `BOOKING_EMAIL_FROM` after that subdomain is verified. Replies to customer confirmations are directed to matthewdaguinaldo@gmail.com, so this sender does not need an inbox for replies.
 
 ## 2. Create an API key
 
@@ -24,7 +24,7 @@ Open Cloudflare → Workers & Pages → your Worker **detail** → Settings → 
 | Name | Value |
 | --- | --- |
 | `RESEND_API_KEY` | The key from Resend |
-| `BOOKING_EMAIL_FROM` | Your complete sender, e.g. `Portland Mobile Detailing <bookings@mail.yourdomain.com>` |
+| `BOOKING_EMAIL_FROM` | Your complete sender, e.g. `Nueces Detail <bookings@mail.nuecesdetail.com>` |
 
 Save/apply the changes using Cloudflare's controls. These must be Worker runtime settings, not only build variables. Do not prefix either name with `NEXT_PUBLIC_`.
 
@@ -37,9 +37,11 @@ npx wrangler secret put BOOKING_EMAIL_FROM
 
 Each command prompts for its value. The owner notification recipient is already set to **matthewdaguinaldo@gmail.com** in server code; you do not need to change `ADMIN_EMAIL` or your login credentials.
 
-## 4. Deploy the email changes
+## 4. Connect nuecesdetail.com and deploy
 
-Merge the booking-email pull request and let your configured GitHub deployment finish, or check out that branch and deploy using `npm run deploy`. No new database migration is needed for this feature. Make sure the deployed version includes `lib/booking-email.ts`.
+In Cloudflare, open Worker **detail** → Settings → Domains & Routes and add `nuecesdetail.com` as a custom domain. Add `www.nuecesdetail.com` as well if you want that address to work. Keep the Worker name and D1 database name `detail`; the public brand does not require renaming infrastructure. Set the build variable `NEXT_PUBLIC_BASE_DOMAIN=nuecesdetail.com`. If older `NEXT_PUBLIC_BUSINESS_NAME` or email settings exist, update them to the new brand and your real contact email. Domain verification in Resend and the website custom domain are separate setup steps.
+
+Merge the branding and booking-email pull requests and let your configured GitHub deployment finish, or check out that branch and deploy using `npm run deploy`. No new database migration is needed for this feature. Make sure the deployed version includes `lib/booking-email.ts`.
 
 ## 5. Test one real booking
 

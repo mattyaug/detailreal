@@ -22,12 +22,12 @@ export function bookingMessages(booking: BookingEmail, from: string): { customer
   return {
     customer: {
       from, to: [booking.email], reply_to: OWNER_NOTIFICATION_EMAIL,
-      subject: "Your detailing appointment is confirmed",
-      text: `Hello,\n\nYour appointment is confirmed.\n\n${details}\n\nTo ask a question or request a change, reply to this email.\n\nThank you!\nPortland Mobile Detailing`,
+      subject: "Nueces Detail — your appointment is confirmed",
+      text: `Hello,\n\nYour appointment is confirmed.\n\n${details}\n\nTo ask a question or request a change, reply to this email.\n\nThank you!\nNueces Detail`,
     },
     owner: {
       from, to: [OWNER_NOTIFICATION_EMAIL], reply_to: booking.email,
-      subject: "New detailing appointment booked",
+      subject: "Nueces Detail — new appointment booked",
       text: `A new appointment has been booked.\n\n${details}\n\nView your owner dashboard to manage this appointment.`,
     },
   };

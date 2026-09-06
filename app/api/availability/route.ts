@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getService } from "@/lib/services";
+import { getService, priceAddOns } from "@/lib/services";
 import { getAvailableSlots } from "@/lib/schedule";
 
 export const runtime = "nodejs";
@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Choose a valid date and service." }, { status: 400 });
     }
 
-    const slots = await getAvailableSlots(date, service.durationMinutes);
+    let addOns;
+    try { addOns = priceAddOns(JSON.parse(request.nextUrl.searchParams.get("addOns") || "[]")); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
+    const slots = await getAvailableSlots(date, service.durationMinutes + addOns.durationMinutes);
     return NextResponse.json({ slots });
   } catch (error) {
     console.error(error);

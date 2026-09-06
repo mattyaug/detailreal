@@ -1,5 +1,5 @@
 {
-  "name": "portland-mobile-detailing",
+  "name": "nueces-detail",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -17,7 +17,8 @@
     "db:status": "wrangler d1 migrations list DB --remote",
     "typecheck": "tsc --noEmit",
     "test:db": "node --test tests/database.test.mjs",
-    "test:email": "node --experimental-strip-types --test tests/booking-email.test.mjs"
+    "test:email": "node --experimental-strip-types --test tests/booking-email.test.mjs",
+    "test:addons": "node --experimental-strip-types --test tests/add-ons.test.mjs"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",

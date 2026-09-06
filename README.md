@@ -1,4 +1,4 @@
-# Portland Mobile Detailing
+# Nueces Detail
 
 Next.js website and owner-managed appointment scheduler for Portland, Texas, deployed on Cloudflare Workers with OpenNext and D1 (SQLite).
 
@@ -37,3 +37,9 @@ Configure owner credentials before login and follow the setup guide before deplo
 ## Customization
 
 Services/prices/durations live in `lib/services.ts`. Marketing content lives in `app/page.tsx`; images belong in `public/`. Set real business contact information, pricing, policies, and domain before launch. `/admin` is the owner dashboard; `/book` is customer booking. The existing middleware supports optional `admin.`, `schedule.`, and `book.` aliases on your domain. `NEXT_PUBLIC_BASE_DOMAIN` must be set at build time for domain routing.
+
+## Nueces Detail branding
+
+Public domain: https://nuecesdetail.com. The supplied logo is used in the header, owner login, footer, and browser tab. See [email setup](docs/EMAIL_SETUP.md) for `mail.nuecesdetail.com` sender verification and Cloudflare domain setup.
+
+Add-ons are priced server-side and reserve a provisional 30 minutes per item (per headlight for restoration). Adjust durations in `lib/services.ts` when actual timings are established. All new bookings require water and electricity access confirmation. Selected add-ons and confirmation are saved with the appointment; prices and duration include the add-ons. No new database migration is required. Existing appointments keep their original pricing and descriptions.
