@@ -7,6 +7,7 @@ export type BookingEmail = {
 };
 
 export const OWNER_NOTIFICATION_EMAIL = "matthewdaguinaldo@gmail.com";
+export const CUSTOMER_REPLY_EMAIL = "contact@nuecesdetail.com";
 type Mail = { from: string; to: string[]; reply_to: string; subject: string; text: string };
 
 export function bookingMessages(booking: BookingEmail, from: string): { customer: Mail; owner: Mail } {
@@ -21,7 +22,7 @@ export function bookingMessages(booking: BookingEmail, from: string): { customer
   ].join("\n");
   return {
     customer: {
-      from, to: [booking.email], reply_to: OWNER_NOTIFICATION_EMAIL,
+      from, to: [booking.email], reply_to: CUSTOMER_REPLY_EMAIL,
       subject: "Nueces Detail — your appointment is confirmed",
       text: `Hello,\n\nYour appointment is confirmed.\n\n${details}\n\nTo ask a question or request a change, reply to this email.\n\nThank you!\nNueces Detail`,
     },
