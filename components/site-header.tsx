@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export function SiteHeader() {
   const name = "Nueces Detail";
-  const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || "(361) 555-0100";
+  const phone = "361-633-9667";
 
   return (
     <header className="site-header">

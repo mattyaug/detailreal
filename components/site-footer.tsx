@@ -1,7 +1,7 @@
 export function SiteFooter() {
   const name = "Nueces Detail";
-  const phone = process.env.NEXT_PUBLIC_BUSINESS_PHONE || "(361) 555-0100";
-  const email = process.env.NEXT_PUBLIC_BUSINESS_EMAIL || "matthewdaguinaldo@gmail.com";
+  const phone = "361-633-9667";
+  const email = "contact@nuecesdetail.com";
 
   return (
     <footer className="site-footer">
