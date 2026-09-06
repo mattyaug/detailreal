@@ -350,7 +350,7 @@ h3 { font-size: 23px; }
 }
 
 /* Nueces Detail brand and package inclusions */
-.brand-logo { display:block; width:72px; height:72px; object-fit:contain; flex-shrink:0; background:white; }
+.brand-logo { display:block; width:72px; height:72px; object-fit:contain; flex-shrink:0; background:transparent; }
 .package-row { padding-top:28px; padding-bottom:28px; }
 .package-row:hover { padding-top:28px; padding-bottom:28px; }
 .service-inclusions { margin:16px 0 0; padding-left:20px; font-size:16px; line-height:1.6; }

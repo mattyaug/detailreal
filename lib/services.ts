@@ -3,33 +3,33 @@ export type Service = {
   durationMinutes: number; startingPriceCents: number;
 };
 const exterior = [
-  "2-bucket hand wash with a foam cannon",
-  "Neutral foam wash",
-  "Full exterior wax",
-  "Full wheel and tire hand wash",
-  "All-around sealant",
-  "All exterior treatments use industrial-grade Koch-Chemie products",
+  "A foam-cannon pre-wash followed by a careful two-bucket hand wash",
+  "A pH-neutral foam wash for gentle, thorough cleaning",
+  "A complete exterior wax application to enhance shine",
+  "Wheels and tires cleaned thoroughly by hand",
+  "An all-around sealant application for lasting exterior protection",
+  "Industrial-grade Koch-Chemie products used throughout the exterior service",
 ];
 const interior = [
-  "Leather thoroughly cleaned and conditioned",
-  "All carpets shampooed and vacuumed",
-  "Hand-brushed cleaning",
-  "Hard-to-reach areas cleaned, including door jambs",
-  "Headliner cleaning",
-  "UV protectant for the hot Texas sun",
+  "Thorough leather cleaning and conditioning",
+  "Complete carpet shampooing and vacuuming",
+  "Detailed brushwork to lift dirt from interior surfaces and seams",
+  "Careful cleaning of door jambs and other hard-to-reach areas",
+  "Headliner cleaning as part of a complete cabin refresh",
+  "UV protection to help interior surfaces stand up to the Texas sun",
 ];
 export const SERVICES: Service[] = [
-  { slug: "exterior-detail", name: "Exterior Detail", description: "A complete exterior wash, wax, and sealant treatment. Every item below is included.", includes: exterior, durationMinutes: 90, startingPriceCents: 9900 },
-  { slug: "interior-detail", name: "Interior Full Reset", description: "A full interior reset, from leather and carpets to the areas quick cleans miss. Every item below is included.", includes: interior, durationMinutes: 120, startingPriceCents: 14900 },
-  { slug: "full-detail", name: "Full Detail", description: "The complete Exterior Detail and Interior Full Reset together. All exterior and interior inclusions listed below are included.", includes: [...exterior, ...interior], durationMinutes: 240, startingPriceCents: 24900 },
-  { slug: "maintenance-detail", name: "Maintenance Detail", description: "Recurring upkeep for vehicles that have already received a full detail. For the complete wash or interior reset described above, choose Exterior Detail, Interior Full Reset, or Full Detail.", includes: ["Maintenance care for previously detailed vehicles"], durationMinutes: 90, startingPriceCents: 8900 },
+  { slug: "exterior-detail", name: "Exterior Detail", description: "A thorough hand wash with professional Koch-Chemie products, finished with wax and sealant for a clean, glossy, protected exterior. Includes every treatment listed below.", includes: exterior, durationMinutes: 90, startingPriceCents: 9900 },
+  { slug: "interior-detail", name: "Interior Full Reset", description: "Refresh the entire cabin with deep carpet care, cleaned and conditioned leather, detailed brushwork, and UV protection. Includes every treatment listed below.", includes: interior, durationMinutes: 120, startingPriceCents: 14900 },
+  { slug: "full-detail", name: "Full Detail", description: "Bring the whole vehicle back to its best with our Exterior Detail and Interior Full Reset in one appointment. Includes the complete wash, wax, sealant, and cabin-care treatments listed below.", includes: [...exterior, ...interior], durationMinutes: 240, startingPriceCents: 24900 },
+  { slug: "maintenance-detail", name: "Maintenance Detail", description: "Keep a previously detailed vehicle looking cared for with regular maintenance. For deep cleaning and the complete treatments listed in our other packages, choose an Exterior Detail, Interior Full Reset, or Full Detail.", includes: ["Ongoing upkeep for vehicles that have already received a full detail"], durationMinutes: 90, startingPriceCents: 8900 },
 ];
 export const ADD_ONS = [
-  { slug: "clay-bar", name: "Clay bar decontamination", description: "For a glossy, excellent finish.", priceCents: 8000, durationMinutes: 30, maxQuantity: 1 },
-  { slug: "engine-bay", name: "Engine bay detailing", description: "Add engine bay detailing to your appointment.", priceCents: 5000, durationMinutes: 30, maxQuantity: 1 },
-  { slug: "water-spots", name: "Hard water spot removal", description: "Target stubborn hard water spots.", priceCents: 15000, durationMinutes: 30, maxQuantity: 1 },
-  { slug: "headlight", name: "Headlight restoration", description: "$50 per headlight. Choose one or two.", priceCents: 5000, durationMinutes: 30, maxQuantity: 2 },
-  { slug: "cabin-filter", name: "Cabin air filter replacement", description: "Replace your cabin air filter.", priceCents: 2000, durationMinutes: 30, maxQuantity: 1 },
+  { slug: "clay-bar", name: "Clay bar decontamination", description: "Lift bonded surface contaminants with clay-bar treatment for a smoother surface and a glossy finish.", priceCents: 8000, durationMinutes: 30, maxQuantity: 1 },
+  { slug: "engine-bay", name: "Engine bay detailing", description: "Give the area under the hood focused cleaning and detailing for a more presentable engine bay.", priceCents: 5000, durationMinutes: 30, maxQuantity: 1 },
+  { slug: "water-spots", name: "Hard water spot removal", description: "Treat mineral deposits left by hard water to restore a cleaner-looking finish.", priceCents: 15000, durationMinutes: 30, maxQuantity: 1 },
+  { slug: "headlight", name: "Headlight restoration", description: "Refresh cloudy headlight lenses for a clearer appearance. Priced per headlight; select one or both.", priceCents: 5000, durationMinutes: 30, maxQuantity: 2 },
+  { slug: "cabin-filter", name: "Cabin air filter replacement", description: "Replace the cabin air filter to help keep the air entering your interior fresh.", priceCents: 2000, durationMinutes: 30, maxQuantity: 1 },
 ];
 export type AddOnSelection = { slug: string; quantity: number };
 export function priceAddOns(input: unknown) {
