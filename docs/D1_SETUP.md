@@ -20,25 +20,25 @@ npm install
 
 If PowerShell says `npm.ps1` cannot run, use `npm.cmd` instead of `npm` and `npx.cmd` instead of `npx` for the commands below. Do not change your machine's security settings just to run these commands.
 
-## 2. Sign in to Cloudflare and create D1
+## 2. Sign in to Cloudflare and use your existing D1 database
 
 Create or sign in to your Cloudflare account at https://dash.cloudflare.com/.
 
 ```sh
 npx wrangler login
 npx wrangler whoami
-npx wrangler d1 create detailreal-db
+npx wrangler d1 list
 ```
 
-The login command opens a browser authorization page. Complete it with the account that will host this website. The create command prints your new database's ID, shaped like a UUID. If the database already exists, use `npx wrangler d1 list` to find its ID instead of creating another one.
+The login command opens a browser authorization page. Complete it with the account containing your existing database. This project is now configured for database `detail`, ID `cb722886-4656-4c79-bc00-3f3d8eb4398d`. Do not create another database. Confirm it appears in the list under your account.
 
-Open `wrangler.jsonc` in a text editor. Keep the existing settings, and replace only `REPLACE_WITH_D1_DATABASE_ID` with that real ID. The database entry should look like this, with your actual ID:
+The D1 entry in `wrangler.jsonc` is already set to:
 
 ```json
 {
   "binding": "DB",
-  "database_name": "detailreal-db",
-  "database_id": "YOUR-ACTUAL-DATABASE-ID",
+  "database_name": "detail",
+  "database_id": "cb722886-4656-4c79-bc00-3f3d8eb4398d",
   "migrations_dir": "migrations"
 }
 ```
@@ -151,7 +151,7 @@ npx wrangler secret put ADMIN_PASSWORD_HASH_B64
 npx wrangler secret put SESSION_SECRET
 ```
 
-Use the same email/hash/secret you generated, or generate separate production ones. These secrets belong to the deployed Worker; `.env.local` is not uploaded automatically. In Cloudflare's Worker settings, verify that the D1 binding is named `DB` and targets `detailreal-db`. Follow the `workers.dev` address printed by deploy and repeat the booking/login checks before sharing the site with customers.
+Use the same email/hash/secret you generated, or generate separate production ones. These secrets belong to the deployed Worker; `.env.local` is not uploaded automatically. In Cloudflare's Worker settings, verify that the D1 binding is named `DB` and targets `detail`. Follow the `workers.dev` address printed by deploy and repeat the booking/login checks before sharing the site with customers.
 
 For automatic GitHub deployments, connect `mattyaug/detailreal` in Cloudflare Workers Builds after merging. Use `npx opennextjs-cloudflare build` for the build command and `npx opennextjs-cloudflare deploy` for the deploy command. Set `NEXT_PUBLIC_BASE_DOMAIN` in build variables if using a domain. Owner credentials must also exist as runtime Worker secrets. Apply future remote migrations deliberately before deploying code that depends on them; do not connect untrusted preview branches to a production database.
 
@@ -181,6 +181,7 @@ If you have a separate SQLite `.db` file from another system, do not upload it b
 
 | Symptom | What to check |
 | --- | --- |
+| Upload error 10021: invalid `database_id` | Deploy the latest commit with the real database ID above; retrying the old commit retains the placeholder. |
 | Binding `DB` is not configured | Confirm one D1 entry named `DB` in the configuration and redeploy. |
 | `no such table` | Run migrations in the environment actually being used: local or remote. |
 | Local bookings absent online | Expected: local and remote are separate databases. |
