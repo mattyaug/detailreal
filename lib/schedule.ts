@@ -8,7 +8,7 @@ type AvailabilityRow = {
   weekday: number;
   start_time: string;
   end_time: string;
-  is_enabled: boolean;
+  is_enabled: number;
 };
 
 const DEFAULT_OPEN_TIME = "08:00";
@@ -33,7 +33,7 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
   let endTime = DEFAULT_CLOSE_TIME;
   let existingBookings: BookingRow[] = [];
 
-  try {
+  {
     const availabilityResult = await query<AvailabilityRow>(
       `SELECT weekday, start_time, end_time, is_enabled
        FROM availability
@@ -42,8 +42,8 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
       [weekday],
     );
 
-    // Every day is bookable. Stored hours customize the standard 8–5 day.
     const hours = availabilityResult.rows[0];
+    if (!hours || !hours.is_enabled) return [];
     startTime = hours?.start_time || DEFAULT_OPEN_TIME;
     endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
 
@@ -68,11 +68,6 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
       [dayEnd.toISO(), dayStart.toISO()],
     );
     existingBookings = bookingsResult.rows;
-  } catch (error) {
-    // Availability should remain visible while the database is being provisioned
-    // or briefly unreachable. The booking endpoint still performs the definitive
-    // database insert, so it remains the final guard against double booking.
-    console.error("Using default availability because schedule storage is unavailable:", error);
   }
 
   const [startHour, startMinute] = startTime.split(":").map(Number);
