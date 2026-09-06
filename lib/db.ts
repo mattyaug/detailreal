@@ -32,3 +32,9 @@ export async function executeBatch(statements: { sql: string; params?: unknown[]
   if (results.some((result: { success: boolean }) => !result.success)) throw new Error("D1 batch failed.");
   return results;
 }
+
+// D1 wraps SQLite errors; it does not expose PostgreSQL constraint fields.
+export function isBookingConflict(error: unknown): boolean {
+  return error instanceof Error && (error.message.includes("no_overlapping_active_bookings") ||
+    (error.cause instanceof Error && isBookingConflict(error.cause)));
+}
