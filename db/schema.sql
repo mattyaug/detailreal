@@ -46,3 +46,8 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 CREATE INDEX IF NOT EXISTS bookings_starts_at_idx ON bookings (starts_at);
 CREATE INDEX IF NOT EXISTS bookings_status_idx ON bookings (status);
+CREATE TABLE IF NOT EXISTS weekly_blocked_hours (
+  weekday INTEGER NOT NULL CHECK (weekday BETWEEN 0 AND 6),
+  hour INTEGER NOT NULL CHECK (hour BETWEEN 0 AND 23),
+  PRIMARY KEY (weekday, hour)
+);

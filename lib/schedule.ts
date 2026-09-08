@@ -1,5 +1,6 @@
 import { DateTime } from "luxon";
 import { query } from "@/lib/db";
+import { overlapsBlockedHour } from "@/lib/hour-blocks";
 
 export const BUSINESS_TIME_ZONE = "America/Chicago";
 export const SLOT_STEP_MINUTES = 30;
@@ -32,6 +33,7 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
   let startTime = DEFAULT_OPEN_TIME;
   let endTime = DEFAULT_CLOSE_TIME;
   let existingBookings: BookingRow[] = [];
+  let blockedHours: number[] = [];
 
   {
     const availabilityResult = await query<AvailabilityRow>(
@@ -46,6 +48,10 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     if (!hours || !hours.is_enabled) return [];
     startTime = hours?.start_time || DEFAULT_OPEN_TIME;
     endTime = hours?.end_time || DEFAULT_CLOSE_TIME;
+    const hourBlocks = await query<{ hour: number }>(
+      `SELECT hour FROM weekly_blocked_hours WHERE weekday = ?`, [weekday],
+    );
+    blockedHours = hourBlocks.rows.map((row) => row.hour);
 
     const blockedResult = await query<{ blocked_date: string }>(
       `SELECT blocked_date
@@ -90,7 +96,8 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     });
 
     const leadTimeOk = cursor > now.plus({ hours: 2 });
-    if (!overlaps && leadTimeOk) {
+    const hourBlocked = overlapsBlockedHour(cursor.hour * 60 + cursor.minute, slotEnd.hour * 60 + slotEnd.minute, blockedHours);
+    if (!overlaps && !hourBlocked && leadTimeOk) {
       slots.push({
         value: cursor.toISO()!,
         label: cursor.toFormat("h:mm a"),
