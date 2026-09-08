@@ -18,7 +18,7 @@ Use `npm run db:migrate` locally and `npm run db:migrate:remote` for Cloudflare.
 
 ## Scheduler
 
-New databases default to 8 AM–5 PM every day, editable in `/admin`; existing saved hours are preserved. Disabled weekdays and blocked dates have no slots. Slots start every 30 minutes, respect service duration and a two-hour lead time, and use America/Chicago with daylight saving. Appointments are stored as UTC ISO text and prices as integer cents. Cancelled bookings free their slots; overlapping restores are rejected. Storage failures return an error rather than fabricated availability.
+New databases default to 8 AM–5 PM every day, editable in `/admin`; existing saved hours are preserved. Disabled weekdays and blocked dates have no slots. Slots start every 30 minutes, start no earlier than tomorrow in Central Time, respect service duration and a two-hour lead time, and use America/Chicago with daylight saving. Appointments are stored as UTC ISO text and prices as integer cents. Cancelled bookings free their slots; overlapping restores are rejected. Storage failures return an error rather than fabricated availability.
 
 ## Commands
 

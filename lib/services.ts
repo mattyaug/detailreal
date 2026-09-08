@@ -21,6 +21,7 @@ const exterior = [
   "Industrial-grade Koch-Chemie products used throughout the exterior service",
 ];
 const interior = [
+  "Complete removal of trash and loose debris from the cabin",
   "Thorough leather cleaning and conditioning",
   "Complete carpet shampooing and vacuuming",
   "Detailed brushwork to lift dirt from interior surfaces and seams",

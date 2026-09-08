@@ -382,3 +382,15 @@ h3 { font-size: 23px; }
 @media (max-width: 440px) { .vehicle-size-option { padding: 12px; gap: 8px; } .vehicle-size-option strong { font-size: 13px; } }
 .booking-row-actions [aria-pressed='true'] { outline: 2px solid currentColor; }
 
+.footer-bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; }
+.site-footer .footer-phone { margin: 12px 0 4px; color: inherit; font-size: clamp(18px, 2vw, 22px); }
+.site-footer .footer-phone a { display: inline; color: inherit; font-size: inherit; }
+.footer-bottom a, .privacy-page a, .form-card .help a { text-decoration: underline; text-underline-offset: 4px; }
+.privacy-page { padding-top: 72px; padding-bottom: 80px; background: var(--paper); color: var(--ink); }
+.privacy-content { max-width: 800px; }
+.privacy-page .eyebrow { color: #00659f; }
+.privacy-page h1 { font-size: clamp(40px, 7vw, 72px); line-height: 1.1; letter-spacing: -.04em; }
+.privacy-page h2 { font-size: clamp(24px, 4vw, 30px); line-height: 1.25; }
+.privacy-page section { margin-top: 36px; }
+.privacy-page p { line-height: 1.75; }
+.privacy-updated { color: #625f59; }

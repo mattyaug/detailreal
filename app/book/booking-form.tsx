@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { bookableDates } from "@/lib/booking-dates";
 import { SERVICES, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
@@ -11,28 +13,6 @@ type BookingResponse = {
   booking?: { id: string; serviceName: string; startsAt: string; priceCents: number };
   error?: string;
 };
-
-function todayString() {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Chicago",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
-function bookableDates() {
-  const [year, month, day] = todayString().split("-").map(Number);
-  const start = new Date(year, month - 1, day, 12);
-
-  return Array.from({ length: 90 }, (_, index) => {
-    const current = new Date(start);
-    current.setDate(start.getDate() + index);
-    const value = [current.getFullYear(), String(current.getMonth() + 1).padStart(2, "0"), String(current.getDate()).padStart(2, "0")].join("-");
-    const formatted = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(current);
-    return { value, label: index === 0 ? `Today — ${formatted}` : formatted };
-  });
-}
 
 export function BookingForm({ initialService }: { initialService: string }) {
   const [serviceSlug, setServiceSlug] = useState(initialService);
@@ -56,7 +36,19 @@ export function BookingForm({ initialService }: { initialService: string }) {
   const vehiclePricing = priceVehicle(service, vehicleSize);
   const totalPrice = vehiclePricing.priceCents + addOns.priceCents;
   const totalMinutes = service.durationMinutes + addOns.durationMinutes;
-  const dates = useMemo(bookableDates, []);
+  const [dates, setDates] = useState(() => bookableDates());
+
+  useEffect(() => {
+    const refresh = () => {
+      const nextDates = bookableDates();
+      setDates(nextDates);
+      setDate((current) => current && current < nextDates[0].value ? "" : current);
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener("focus", refresh);
+    return () => { window.clearInterval(interval); window.removeEventListener("focus", refresh); };
+  }, []);
 
   useEffect(() => {
     setSelectedTime("");
@@ -143,7 +135,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
 
       <form className="form-card" onSubmit={submit}>
         <h2>Appointment details</h2>
-        <p>All times are shown in Central Time.</p>
+        <p>All times are shown in Central Time. Same-day appointments are not available; please choose tomorrow or a later date.</p>
 
         {confirmation && (
           <div className="success-box">
@@ -203,6 +195,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
         </div>
 
         <label className="utility-confirmation"><input type="checkbox" required checked={utilitiesConfirmed} onChange={(event) => setUtilitiesConfirmed(event.target.checked)} /><span>I confirm there will be access to water and electricity at the appointment location.</span></label>
+        <p className="help">Learn how we handle your booking information in our <Link href="/privacy">Privacy Policy</Link>.</p>
         <div className="form-actions">
           <span className="help" aria-live="polite">Estimated total: <strong>{formatPrice(totalPrice)}</strong>. Submitting reserves the selected time immediately.</span>
           <button className="button" disabled={submitting || !selectedTime || !utilitiesConfirmed}>{submitting ? "Booking…" : "Confirm appointment"}</button>

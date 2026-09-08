@@ -3,6 +3,7 @@ import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
 import { getService, priceVehicle, priceAddOns } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
+import { isFutureBookingDate } from "@/lib/booking-dates";
 import { execute, isBookingConflict } from "@/lib/db";
 
 import { sendBookingEmails } from "@/lib/booking-email";
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest) {
 
     const start = DateTime.fromISO(startsAt, { setZone: true }).setZone(BUSINESS_TIME_ZONE);
     if (!start.isValid) return NextResponse.json({ error: "Choose a valid appointment time." }, { status: 400 });
+    if (!isFutureBookingDate(start.toISODate()!)) {
+      return NextResponse.json({ error: "Same-day appointments are not available. Choose tomorrow or a later date (Central Time)." }, { status: 400 });
+    }
 
     const durationMinutes = service.durationMinutes + addOns.durationMinutes;
     let vehiclePricing;

@@ -1,8 +1,9 @@
 import { DateTime } from "luxon";
 import { query } from "@/lib/db";
 import { overlapsBlockedHour } from "@/lib/hour-blocks";
+import { BUSINESS_TIME_ZONE, isFutureBookingDate } from "@/lib/booking-dates";
 
-export const BUSINESS_TIME_ZONE = "America/Chicago";
+export { BUSINESS_TIME_ZONE } from "@/lib/booking-dates";
 export const SLOT_STEP_MINUTES = 30;
 
 type AvailabilityRow = {
@@ -22,10 +23,7 @@ type BookingRow = {
 
 export async function getAvailableSlots(date: string, durationMinutes: number) {
   const localDate = DateTime.fromISO(date, { zone: BUSINESS_TIME_ZONE });
-  if (!localDate.isValid) return [];
-
-  const today = DateTime.now().setZone(BUSINESS_TIME_ZONE).startOf("day");
-  if (localDate.startOf("day") < today) return [];
+  if (!isFutureBookingDate(date)) return [];
 
   // Luxon: Monday=1 ... Sunday=7. Database: Sunday=0 ... Saturday=6.
   const weekday = localDate.weekday === 7 ? 0 : localDate.weekday;

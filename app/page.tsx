@@ -82,7 +82,7 @@ export default function HomePage() {
         <section className="local-section" id="service-area">
           <div className="shell local-grid">
             <p className="section-index">04 / Local service</p>
-            <div><h2>Made for the<br />Coastal Bend.</h2><p>Based in Portland and serving the surrounding community. Not sure if you’re in range? Give us a call.</p></div>
+            <div><h2>Made for the<br />Coastal Bend.</h2><p>Based in Portland and serving the surrounding community. Not sure if you’re in range? Give us a call or text.</p></div>
             <div className="location-stamp"><span>27.8778° N</span><b>PORTLAND</b><span>97.3239° W</span></div>
           </div>
         </section>
