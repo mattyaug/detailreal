@@ -1,14 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { SERVICES, ADD_ONS, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
+import { SERVICES, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
 
 type BookingResponse = {
   ok?: boolean;
   emailAccepted?: boolean;
-  booking?: { id: string; serviceName: string; startsAt: string };
+  booking?: { id: string; serviceName: string; startsAt: string; priceCents: number };
   error?: string;
 };
 
@@ -36,6 +36,7 @@ function bookableDates() {
 
 export function BookingForm({ initialService }: { initialService: string }) {
   const [serviceSlug, setServiceSlug] = useState(initialService);
+  const [vehicleSize, setVehicleSize] = useState<string>("compact");
   const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
   const [utilitiesConfirmed, setUtilitiesConfirmed] = useState(false);
   const addOns = useMemo(() => priceAddOns(addOnSelections), [addOnSelections]);
@@ -52,7 +53,8 @@ export function BookingForm({ initialService }: { initialService: string }) {
     () => SERVICES.find((item) => item.slug === serviceSlug) ?? SERVICES[0],
     [serviceSlug],
   );
-  const totalPrice = service.startingPriceCents + addOns.priceCents;
+  const vehiclePricing = priceVehicle(service, vehicleSize);
+  const totalPrice = vehiclePricing.priceCents + addOns.priceCents;
   const totalMinutes = service.durationMinutes + addOns.durationMinutes;
   const dates = useMemo(bookableDates, []);
 
@@ -101,7 +103,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, serviceSlug, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed }),
+        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed }),
       });
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");
@@ -111,6 +113,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
       setSlots([]);
       setDate("");
       setAddOnSelections([]);
+      setVehicleSize("compact");
       setUtilitiesConfirmed(false);
       formElement.reset();
     } catch (err) {
@@ -128,11 +131,14 @@ export function BookingForm({ initialService }: { initialService: string }) {
         <p>{service.description}</p>
         <ul className="service-inclusions">{service.includes.map((item) => <li key={item}>{item}</li>)}</ul>
         <div className="summary-list">
-          <div className="summary-item"><span>Starting total with add-ons</span><strong>{formatPrice(totalPrice)}</strong></div>
+          <div className="summary-item"><span>Base service</span><strong>{formatPrice(service.startingPriceCents)}</strong></div>
+          <div className="summary-item"><span>Vehicle size</span><strong>{vehiclePricing.vehicleSize.adjustmentCents ? `+${formatPrice(vehiclePricing.vehicleSize.adjustmentCents)}` : "Base rate"}</strong></div>
+          {addOns.priceCents > 0 && <div className="summary-item"><span>Add-ons</span><strong>{formatPrice(addOns.priceCents)}</strong></div>}
+          <div className="summary-item" aria-live="polite"><span>Estimated total</span><strong>{formatPrice(totalPrice)}</strong></div>
           <div className="summary-item"><span>Estimated time</span><strong>{totalMinutes / 60} hrs</strong></div>
           <div className="summary-item"><span>Location</span><strong>Portland, TX</strong></div>
         </div>
-        <div className="info-box">Final price may vary based on vehicle size and condition. We&apos;ll confirm everything before work begins.</div>
+        <div className="info-box">Your selected vehicle size is included in this estimate. Any additional work for vehicle condition will be discussed before we begin.</div>
       </aside>
 
       <form className="form-card" onSubmit={submit}>
@@ -142,6 +148,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
         {confirmation && (
           <div className="success-box">
             Booking confirmed. Reference <strong>{confirmation.id.slice(0, 8).toUpperCase()}</strong>. Your {confirmation.serviceName} is scheduled for {new Date(confirmation.startsAt).toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "long", timeStyle: "short" })}.
+            <p>Estimated total: <strong>{formatPrice(confirmation.priceCents)}</strong>.</p>
             <p>{emailAccepted ? "Your confirmation email has been submitted for delivery. Please check your inbox and spam folder." : "Your appointment is saved, but we could not send the confirmation email. Keep this reference; you do not need to book again."}</p>
           </div>
         )}
@@ -154,6 +161,17 @@ export function BookingForm({ initialService }: { initialService: string }) {
               {SERVICES.map((item) => <option key={item.slug} value={item.slug}>{item.name} — from {formatPrice(item.startingPriceCents)}</option>)}
             </select>
           </div>
+          <fieldset className="field full vehicle-size-field"><legend>Find your vehicle fit</legend>
+            <p className="help" id="vehicle-size-help">Choose the size that best matches your vehicle. Your estimate updates below.</p>
+            <div className="vehicle-size-options" aria-describedby="vehicle-size-help">
+              {VEHICLE_SIZES.map((size) => <label className={`vehicle-size-option${vehicleSize === size.slug ? " selected" : ""}`} key={size.slug}>
+                <input type="radio" name="vehicleSize" value={size.slug} checked={vehicleSize === size.slug} onChange={() => setVehicleSize(size.slug)} required />
+                <span><strong>{size.name}</strong><small>{size.description}</small></span>
+                <strong className="vehicle-size-price">{size.adjustmentCents ? `+${formatPrice(size.adjustmentCents)}` : "Base rate"}</strong>
+              </label>)}
+            </div>
+            <p className="vehicle-size-total" aria-live="polite">Your estimate <strong>{formatPrice(totalPrice)}</strong></p>
+          </fieldset>
           <fieldset className="field full" style={{ border: 0, padding: 0, margin: 0 }}><legend>Add-ons (optional)</legend>
             {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.priceCents)}{item.slug === "headlight" ? " each" : ""}<small>{item.description} Adds {item.durationMinutes} minutes per selection.</small></span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
           </fieldset>
@@ -186,7 +204,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
 
         <label className="utility-confirmation"><input type="checkbox" required checked={utilitiesConfirmed} onChange={(event) => setUtilitiesConfirmed(event.target.checked)} /><span>I confirm there will be access to water and electricity at the appointment location.</span></label>
         <div className="form-actions">
-          <span className="help">Submitting reserves the selected time immediately.</span>
+          <span className="help" aria-live="polite">Estimated total: <strong>{formatPrice(totalPrice)}</strong>. Submitting reserves the selected time immediately.</span>
           <button className="button" disabled={submitting || !selectedTime || !utilitiesConfirmed}>{submitting ? "Booking…" : "Confirm appointment"}</button>
         </div>
       </form>

@@ -367,4 +367,16 @@ h3 { font-size: 23px; }
 
 .hour-blocks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 16px; }
 .hour-blocks .small-button { font-size: 0.75rem; }
+.vehicle-size-field { border: 0; padding: 0; margin: 0; min-width: 0; }
+.vehicle-size-field legend { font-weight: 700; margin-bottom: 8px; }
+.vehicle-size-options { display: grid; gap: 10px; margin-top: 12px; }
+.vehicle-size-option { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; cursor: pointer; background: #0b1822; }
+.vehicle-size-option.selected { border-color: var(--accent); background: rgba(83,215,255,.07); }
+.vehicle-size-option:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+.vehicle-size-option input { flex: 0 0 auto; accent-color: var(--accent); }
+.vehicle-size-option span { flex: 1; min-width: 0; }
+.vehicle-size-option small { display: block; color: var(--muted); margin-top: 4px; font-weight: 400; }
+.vehicle-size-price { white-space: nowrap; color: var(--accent); font-size: 14px; }
+.vehicle-size-total { display: flex; justify-content: space-between; gap: 12px; margin-top: 14px; }
+@media (max-width: 440px) { .vehicle-size-option { padding: 12px; gap: 8px; } .vehicle-size-option strong { font-size: 13px; } }
 .booking-row-actions [aria-pressed='true'] { outline: 2px solid currentColor; }

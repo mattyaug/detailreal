@@ -2,6 +2,16 @@ export type Service = {
   slug: string; name: string; description: string; includes: string[];
   durationMinutes: number; startingPriceCents: number;
 };
+export const VEHICLE_SIZES = [
+  { slug: "compact", name: "Cars & Compact Crossovers", description: "Sedans, coupes and small SUVs", adjustmentCents: 0 },
+  { slug: "standard", name: "Midsize SUVs & Pickups", description: "Midsize SUVs and standard pickup trucks", adjustmentCents: 2000 },
+  { slug: "large", name: "Full-Size SUVs & Trucks", description: "Large SUVs and oversized pickup trucks", adjustmentCents: 4000 },
+] as const;
+export function priceVehicle(service: Service, size: unknown) {
+  const vehicleSize = VEHICLE_SIZES.find((item) => item.slug === size);
+  if (!vehicleSize) throw new Error("Choose a vehicle size.");
+  return { vehicleSize, priceCents: service.startingPriceCents + vehicleSize.adjustmentCents };
+}
 const exterior = [
   "A foam-cannon pre-wash followed by a careful two-bucket hand wash",
   "A pH-neutral foam wash for gentle, thorough cleaning",

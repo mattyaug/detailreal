@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
-import { getService, priceAddOns } from "@/lib/services";
+import { getService, priceVehicle, priceAddOns } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
 import { execute, isBookingConflict } from "@/lib/db";
 
@@ -15,6 +15,7 @@ type BookingInput = {
   phone?: string;
   address?: string;
   vehicle?: string;
+  vehicleSize?: unknown;
   notes?: string;
   company?: string;
   serviceSlug?: string;
@@ -53,8 +54,11 @@ export async function POST(request: NextRequest) {
     if (!start.isValid) return NextResponse.json({ error: "Choose a valid appointment time." }, { status: 400 });
 
     const durationMinutes = service.durationMinutes + addOns.durationMinutes;
-    const priceCents = service.startingPriceCents + addOns.priceCents;
-    const serviceName = service.name + (addOns.summary ? ` + ${addOns.summary}` : "");
+    let vehiclePricing;
+    try { vehiclePricing = priceVehicle(service, body.vehicleSize); }
+    catch { return NextResponse.json({ error: "Choose a vehicle size." }, { status: 400 }); }
+    const priceCents = vehiclePricing.priceCents + addOns.priceCents;
+    const serviceName = `${service.name} — ${vehiclePricing.vehicleSize.name}` + (addOns.summary ? ` + ${addOns.summary}` : "");
     const bookingNotes = `${notes}${notes ? "\n\n" : ""}Water and electricity access confirmed.${addOns.summary ? `\nAdd-ons: ${addOns.summary}` : ""}`;
     const localDate = start.toFormat("yyyy-MM-dd");
     const available = await getAvailableSlots(localDate, durationMinutes);
@@ -79,7 +83,7 @@ export async function POST(request: NextRequest) {
           WHERE status <> 'cancelled' AND starts_at < ? AND ends_at > ?
         )`,
         [
-          id, customerName, email, phone, address, vehicle,
+          id, customerName, email, phone, address, `${vehicle} (${vehiclePricing.vehicleSize.name})`,
           service.slug, serviceName, priceCents, durationMinutes,
           start.toUTC().toISO(), end.toUTC().toISO(), bookingNotes,
           end.toUTC().toISO(), start.toUTC().toISO(),
@@ -110,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       emailAccepted,
-      booking: { id, serviceName, startsAt: start.toISO() },
+      booking: { id, serviceName, startsAt: start.toISO(), priceCents },
     }, { status: 201 });
   } catch (error) {
     console.error(error);
