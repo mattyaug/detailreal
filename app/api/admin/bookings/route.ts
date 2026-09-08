@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
 import { execute, query, isBookingConflict } from "@/lib/db";
+import { bookingListQuery, BOOKING_PAGE_SIZE } from "@/lib/booking-list";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,18 +10,15 @@ async function authorized() {
   return Boolean(await getAdminSession());
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   if (!(await authorized())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const result = await query(
-      `SELECT id, customer_name, email, phone, address, vehicle, service_name,
-              starts_at, ends_at, status, notes
-       FROM bookings
-       WHERE starts_at >= strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 day')
-       ORDER BY starts_at ASC
-       LIMIT 150`,
-    );
-    return NextResponse.json({ bookings: result.rows });
+    const archive = request.nextUrl.searchParams.get("view") === "archive";
+    const offset = Number(request.nextUrl.searchParams.get("offset") || 0);
+    if (!Number.isSafeInteger(offset) || offset < 0) return NextResponse.json({ error: "Invalid page." }, { status: 400 });
+    const { sql, params } = bookingListQuery(archive, offset);
+    const result = await query(sql, params);
+    return NextResponse.json({ bookings: result.rows.slice(0, BOOKING_PAGE_SIZE), hasMore: result.rows.length > BOOKING_PAGE_SIZE });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Unable to load bookings." }, { status: 500 });

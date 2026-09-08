@@ -21,6 +21,7 @@ type Hours = {
   start_time: string;
   end_time: string;
   is_enabled: boolean;
+  blocked_hours: number[];
 };
 
 type BlockedDate = { id: string; blocked_date: string; reason: string | null };
@@ -29,18 +30,23 @@ const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [view, setView] = useState<"upcoming" | "archive">("upcoming");
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [hours, setHours] = useState<Hours[]>([]);
   const [blocked, setBlocked] = useState<BlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (replaceHours = false) => {
     setLoading(true);
     setError("");
+    setBookings([]);
+    setHasMore(false);
     try {
       const [bookingsResponse, availabilityResponse, blockedResponse] = await Promise.all([
-        fetch("/api/admin/bookings", { cache: "no-store" }),
+        fetch(`/api/admin/bookings?view=${view}&offset=${offset}`, { cache: "no-store" }),
         fetch("/api/admin/availability", { cache: "no-store" }),
         fetch("/api/admin/blocked", { cache: "no-store" }),
       ]);
@@ -51,15 +57,19 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
       const [bookingsData, availabilityData, blockedData] = await Promise.all([
         bookingsResponse.json(), availabilityResponse.json(), blockedResponse.json(),
       ]);
+      if (!bookingsResponse.ok || !availabilityResponse.ok || !blockedResponse.ok) {
+        throw new Error(bookingsData.error || availabilityData.error || blockedData.error || "Could not load the dashboard.");
+      }
       setBookings(bookingsData.bookings || []);
-      setHours(availabilityData.availability || []);
+      setHasMore(Boolean(bookingsData.hasMore));
+      setHours((current) => !replaceHours && current.length ? current : availabilityData.availability || []);
       setBlocked(blockedData.blockedDates || []);
-    } catch {
-      setError("Could not load the dashboard.");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not load the dashboard.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [view, offset]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -76,7 +86,7 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     await load();
   }
 
-  function updateHour(weekday: number, field: keyof Hours, value: string | boolean | number) {
+  function updateHour(weekday: number, field: keyof Hours, value: string | boolean | number | number[]) {
     setHours((current) => current.map((row) => row.weekday === weekday ? { ...row, [field]: value } : row));
   }
 
@@ -136,16 +146,21 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
         <div className="admin-shell">
           <div className="admin-heading">
             <div><span className="eyebrow">Owner dashboard</span><h1>Schedule control</h1><p>Signed in as {ownerEmail}</p></div>
-            <button className="button button-small" onClick={load}>Refresh</button>
+            <button className="button button-small" disabled={loading} onClick={() => load(true)}>Refresh</button>
           </div>
           {message && <div className="success-box">{message}</div>}
           {error && <div className="error-box">{error}</div>}
           {loading ? <div className="info-box">Loading schedule…</div> : (
             <div className="admin-grid">
               <section className="admin-card">
-                <h2>Upcoming bookings</h2>
+                <div className="booking-row-actions" aria-label="Appointment views">
+                  <button className="small-button" aria-pressed={view === "upcoming"} onClick={() => { setView("upcoming"); setOffset(0); }}>Upcoming bookings</button>
+                  <button className="small-button" aria-pressed={view === "archive"} onClick={() => { setView("archive"); setOffset(0); }}>Appointment archive</button>
+                </div>
+                <h2>{view === "archive" ? "Appointment archive" : "Upcoming bookings"}</h2>
+                {view === "archive" && <p>All completed, cancelled, and past appointments, newest first. Past appointments keep their recorded status until you update it.</p>}
                 <div className="booking-list">
-                  {bookings.length === 0 && <div className="info-box">No upcoming bookings yet.</div>}
+                  {bookings.length === 0 && <div className="info-box">{view === "archive" ? "No archived appointments on this page." : "No upcoming bookings on this page."}</div>}
                   {bookings.map((booking) => (
                     <article className="booking-row" key={booking.id}>
                       <div className="booking-row-head">
@@ -165,18 +180,36 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
                     </article>
                   ))}
                 </div>
+                <div className="booking-row-actions">
+                  {offset > 0 && <button className="small-button" onClick={() => setOffset(Math.max(0, offset - 50))}>Previous page</button>}
+                  {hasMore && <button className="small-button" onClick={() => setOffset(offset + 50)}>Next page</button>}
+                </div>
               </section>
 
               <div style={{ display: "grid", gap: 20 }}>
                 <section className="admin-card">
                   <h2>Weekly hours</h2>
+                  <p>Set opening and closing times, then block individual hours below. These repeat weekly in Central Time. Existing appointments stay booked.</p>
                   <div className="hours-list">
                     {hours.map((row) => (
-                      <div className="hours-row" key={row.weekday}>
+                      <div key={row.weekday}>
+                      <div className="hours-row">
                         <strong>{DAY_NAMES[row.weekday]}</strong>
-                        <input className="input" type="time" value={row.start_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "start_time", e.target.value)} />
-                        <input className="input" type="time" value={row.end_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "end_time", e.target.value)} />
-                        <span className="day-open">Open</span>
+                        <input className="input" aria-label={`${DAY_NAMES[row.weekday]} opening time`} type="time" value={row.start_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "start_time", e.target.value)} />
+                        <input className="input" aria-label={`${DAY_NAMES[row.weekday]} closing time`} type="time" value={row.end_time.slice(0,5)} onChange={(e) => updateHour(row.weekday, "end_time", e.target.value)} />
+                        <label><input type="checkbox" checked={row.is_enabled} onChange={(e) => updateHour(row.weekday, "is_enabled", e.target.checked)} /> Open</label>
+                      </div>
+                      {row.is_enabled && <details><summary>Block individual hours ({row.blocked_hours.length} blocked)</summary><div className="hour-blocks" role="group" aria-label={`${DAY_NAMES[row.weekday]} hourly blocks`}>
+                        {Array.from({ length: 24 }, (_, hour) => hour).filter((hour) => {
+                          const [startHour, startMinute] = row.start_time.split(":").map(Number);
+                          const [endHour, endMinute] = row.end_time.split(":").map(Number);
+                          return row.blocked_hours.includes(hour) || (hour * 60 < endHour * 60 + endMinute && (hour + 1) * 60 > startHour * 60 + startMinute);
+                        }).map((hour) => {
+                          const blocked = row.blocked_hours.includes(hour);
+                          const label = `${hour % 12 || 12}${hour < 12 ? "am" : "pm"}–${(hour + 1) % 12 || 12}${hour + 1 < 12 || hour === 23 ? "am" : "pm"}`;
+                          return <button key={hour} className={`small-button${blocked ? " danger" : ""}`} aria-pressed={blocked} aria-label={`${DAY_NAMES[row.weekday]} ${label}: ${blocked ? "blocked" : "not blocked"}`} onClick={() => updateHour(row.weekday, "blocked_hours", blocked ? row.blocked_hours.filter((item) => item !== hour) : [...row.blocked_hours, hour].sort((a, b) => a - b))}>{label} · {blocked ? "Blocked" : "Block"}</button>;
+                        })}
+                      </div></details>}
                       </div>
                     ))}
                   </div>
