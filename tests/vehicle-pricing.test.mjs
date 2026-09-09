@@ -2,11 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SERVICES, VEHICLE_SIZES, priceVehicle, priceAddOns } from '../lib/services.ts';
 
-test('each service retains its base price with $20 and $40 size adjustments', () => {
-  assert.deepEqual(SERVICES.map(service => service.startingPriceCents), [9900,14900,19900,8900]);
+test('each service retains its base price with $30 and $60 size adjustments', () => {
+  assert.deepEqual(SERVICES.map(service => service.startingPriceCents), [9900,16900,19900,26900]);
   for (const service of SERVICES) {
     assert.deepEqual(VEHICLE_SIZES.map(size => priceVehicle(service, size.slug).priceCents),
-      [service.startingPriceCents, service.startingPriceCents + 2000, service.startingPriceCents + 4000]);
+      [service.startingPriceCents, service.startingPriceCents + 3000, service.startingPriceCents + 6000]);
   }
 });
 
@@ -20,6 +20,6 @@ test('vehicle adjustment is charged once and add-on pricing stays unchanged', ()
   const addOns = priceAddOns([{slug:'headlight',quantity:2}, {slug:'cabin-filter',quantity:1}]);
   const fullDetail = SERVICES.find(service => service.slug === 'full-detail');
   assert.equal(addOns.priceCents, 12000);
-  assert.equal(priceVehicle(fullDetail, 'large').priceCents + addOns.priceCents, 35900);
+  assert.equal(priceVehicle(fullDetail, 'large').priceCents + addOns.priceCents, 37900);
   assert.equal(fullDetail.durationMinutes + addOns.durationMinutes, 330);
 });

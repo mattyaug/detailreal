@@ -62,6 +62,6 @@ test('archive includes every older record across pages and leaves only active bo
   db.close();
 });
 
-test('only Full Detail base price changes', () => {
-  assert.deepEqual(SERVICES.map(service => service.startingPriceCents), [9900, 14900, 19900, 8900]);
+test('package base prices match the current menu', () => {
+  assert.deepEqual(SERVICES.map(service => service.startingPriceCents), [9900, 16900, 19900, 26900]);
 });

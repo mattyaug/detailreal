@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { BookingForm } from "./booking-form";
-import { SERVICES } from "@/lib/services";
+import { getConfiguredServices } from "@/lib/service-durations";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Book a Detail",
@@ -15,6 +16,7 @@ export default async function BookPage({
   searchParams: Promise<{ service?: string }>;
 }) {
   const params = await searchParams;
+  const SERVICES = await getConfiguredServices();
   const initialService = SERVICES.some((service) => service.slug === params.service)
     ? params.service
     : SERVICES[0].slug;
@@ -30,7 +32,7 @@ export default async function BookPage({
             <p>Choose a service, pick a day from the menu, and reserve a live appointment time. We&apos;ll come to you. Water and electricity access is required.</p>
           </div>
         </section>
-        <BookingForm initialService={initialService!} />
+        <BookingForm initialService={initialService!} services={SERVICES} />
       </main>
       <SiteFooter />
     </>

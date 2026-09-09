@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import type { Service } from "@/lib/services";
+
 type Booking = {
   id: string;
   customer_name: string;
@@ -33,6 +35,8 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
   const [view, setView] = useState<"upcoming" | "archive">("upcoming");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [savingDurations, setSavingDurations] = useState(false);
   const [hours, setHours] = useState<Hours[]>([]);
   const [blocked, setBlocked] = useState<BlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,25 +49,27 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     setBookings([]);
     setHasMore(false);
     try {
-      const [bookingsResponse, availabilityResponse, blockedResponse] = await Promise.all([
+      const [bookingsResponse, availabilityResponse, blockedResponse, servicesResponse] = await Promise.all([
         fetch(`/api/admin/bookings?view=${view}&offset=${offset}`, { cache: "no-store" }),
         fetch("/api/admin/availability", { cache: "no-store" }),
         fetch("/api/admin/blocked", { cache: "no-store" }),
+        fetch("/api/admin/services", { cache: "no-store" }),
       ]);
-      if ([bookingsResponse, availabilityResponse, blockedResponse].some((r) => r.status === 401)) {
+      if ([bookingsResponse, availabilityResponse, blockedResponse, servicesResponse].some((r) => r.status === 401)) {
         window.location.href = "/admin/login";
         return;
       }
-      const [bookingsData, availabilityData, blockedData] = await Promise.all([
-        bookingsResponse.json(), availabilityResponse.json(), blockedResponse.json(),
+      const [bookingsData, availabilityData, blockedData, servicesData] = await Promise.all([
+        bookingsResponse.json(), availabilityResponse.json(), blockedResponse.json(), servicesResponse.json(),
       ]);
-      if (!bookingsResponse.ok || !availabilityResponse.ok || !blockedResponse.ok) {
-        throw new Error(bookingsData.error || availabilityData.error || blockedData.error || "Could not load the dashboard.");
+      if (!bookingsResponse.ok || !availabilityResponse.ok || !blockedResponse.ok || !servicesResponse.ok) {
+        throw new Error(bookingsData.error || availabilityData.error || blockedData.error || servicesData.error || "Could not load the dashboard.");
       }
       setBookings(bookingsData.bookings || []);
       setHasMore(Boolean(bookingsData.hasMore));
       setHours((current) => !replaceHours && current.length ? current : availabilityData.availability || []);
       setBlocked(blockedData.blockedDates || []);
+      setServices(current => !replaceHours && current.length ? current : servicesData.services || []);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not load the dashboard.");
     } finally {
@@ -129,6 +135,21 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     await load();
   }
 
+  async function saveDurations(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMessage(""); setError(""); setSavingDurations(true);
+    try {
+      const response = await fetch("/api/admin/services", {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services: services.map(({ slug, durationMinutes }) => ({ slug, durationMinutes })) }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to save durations.");
+      setMessage("Appointment durations saved. New bookings will use these times.");
+    } catch (error) { setError(error instanceof Error ? error.message : "Unable to save durations."); }
+    finally { setSavingDurations(false); }
+  }
+
   async function logout() {
     await fetch("/api/admin/logout", { method: "POST" });
     window.location.href = "/admin/login";
@@ -187,6 +208,17 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
               </section>
 
               <div style={{ display: "grid", gap: 20 }}>
+                <section className="admin-card">
+                  <h2>Appointment durations</h2>
+                  <p>Set the time reserved for each package in minutes. Add-ons add their own time. Changes apply to new bookings; existing appointments keep their reserved time.</p>
+                  <form onSubmit={saveDurations} className="form-grid">
+                    {services.map(service => <div className="field full" key={service.slug}>
+                      <label htmlFor={`duration-${service.slug}`}>{service.name} (minutes)</label>
+                      <input className="input" id={`duration-${service.slug}`} type="number" min={30} max={720} step={15} required disabled={savingDurations} value={service.durationMinutes || ""} onChange={event => setServices(current => current.map(item => item.slug === service.slug ? { ...item, durationMinutes: Number(event.target.value) } : item))} />
+                    </div>)}
+                    <button className="button button-small" disabled={savingDurations}>{savingDurations ? "Saving…" : "Save durations"}</button>
+                  </form>
+                </section>
                 <section className="admin-card">
                   <h2>Weekly hours</h2>
                   <p>Set opening and closing times, then block individual hours below. These repeat weekly in Central Time. Existing appointments stay booked.</p>

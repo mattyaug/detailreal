@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { SERVICES, ADD_ONS, formatPrice } from "@/lib/services";
+import { ADD_ONS, formatPrice } from "@/lib/services";
+
+import { getConfiguredServices } from "@/lib/service-durations";
+
+export const dynamic = "force-dynamic";
 
 const packageNumbers = ["01", "02", "03", "04"];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const SERVICES = await getConfiguredServices();
   return (
     <>
       <SiteHeader />

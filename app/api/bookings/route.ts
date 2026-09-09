@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
-import { getService, priceVehicle, priceAddOns } from "@/lib/services";
+import { getConfiguredServices } from "@/lib/service-durations";
+import { priceVehicle, priceAddOns } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
 import { isFutureBookingDate } from "@/lib/booking-dates";
 import { execute, isBookingConflict } from "@/lib/db";
@@ -23,6 +24,7 @@ type BookingInput = {
   startsAt?: string;
   addOns?: unknown;
   utilitiesConfirmed?: boolean;
+  durationMinutes?: number;
 };
 
 function clean(value: unknown, max = 500) {
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
     const address = clean(body.address, 220);
     const vehicle = clean(body.vehicle, 160);
     const notes = clean(body.notes, 1500);
-    const service = getService(clean(body.serviceSlug, 80));
+    const service = (await getConfiguredServices()).find(item => item.slug === clean(body.serviceSlug, 80));
     const startsAt = clean(body.startsAt, 80);
 
     if (!customerName || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     const durationMinutes = service.durationMinutes + addOns.durationMinutes;
+    if (body.durationMinutes !== undefined && body.durationMinutes !== durationMinutes) return NextResponse.json({ error: "This package’s appointment duration has changed. Refresh the page and select a time again." }, { status: 409 });
     let vehiclePricing;
     try { vehiclePricing = priceVehicle(service, body.vehicleSize); }
     catch { return NextResponse.json({ error: "Choose a vehicle size." }, { status: 400 }); }

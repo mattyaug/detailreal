@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { bookableDates } from "@/lib/booking-dates";
-import { SERVICES, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
+import { type Service, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
 
@@ -14,7 +14,7 @@ type BookingResponse = {
   error?: string;
 };
 
-export function BookingForm({ initialService }: { initialService: string }) {
+export function BookingForm({ initialService, services: SERVICES }: { initialService: string; services: Service[] }) {
   const [serviceSlug, setServiceSlug] = useState(initialService);
   const [vehicleSize, setVehicleSize] = useState<string>("compact");
   const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
@@ -31,7 +31,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
 
   const service = useMemo(
     () => SERVICES.find((item) => item.slug === serviceSlug) ?? SERVICES[0],
-    [serviceSlug],
+    [serviceSlug, SERVICES],
   );
   const vehiclePricing = priceVehicle(service, vehicleSize);
   const totalPrice = vehiclePricing.priceCents + addOns.priceCents;
@@ -95,7 +95,7 @@ export function BookingForm({ initialService }: { initialService: string }) {
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed }),
+        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed, durationMinutes: totalMinutes }),
       });
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");

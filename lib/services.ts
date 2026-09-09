@@ -4,8 +4,8 @@ export type Service = {
 };
 export const VEHICLE_SIZES = [
   { slug: "compact", name: "Cars & Compact Crossovers", description: "Sedans, coupes and small SUVs", adjustmentCents: 0 },
-  { slug: "standard", name: "Midsize SUVs & Pickups", description: "Midsize SUVs and standard pickup trucks", adjustmentCents: 2000 },
-  { slug: "large", name: "Full-Size SUVs & Trucks", description: "Large SUVs and oversized pickup trucks", adjustmentCents: 4000 },
+  { slug: "standard", name: "Midsize SUVs & Pickups", description: "Midsize SUVs and standard pickup trucks", adjustmentCents: 3000 },
+  { slug: "large", name: "Full-Size SUVs & Trucks", description: "Large SUVs and oversized pickup trucks", adjustmentCents: 6000 },
 ] as const;
 export function priceVehicle(service: Service, size: unknown) {
   const vehicleSize = VEHICLE_SIZES.find((item) => item.slug === size);
@@ -15,7 +15,7 @@ export function priceVehicle(service: Service, size: unknown) {
 const exterior = [
   "A foam-cannon pre-wash followed by a careful two-bucket hand wash",
   "A pH-neutral foam wash for gentle, thorough cleaning",
-  "A complete exterior wax application to enhance shine",
+  "A single application of liquid ceramic SiO2 wax for a glossy, water-repellent finish",
   "Wheels and tires cleaned thoroughly by hand",
   "An all-around sealant application for lasting exterior protection",
   "Industrial-grade Koch-Chemie products used throughout the exterior service",
@@ -26,14 +26,12 @@ const interior = [
   "Complete carpet shampooing and vacuuming",
   "Detailed brushwork to lift dirt from interior surfaces and seams",
   "Careful cleaning of door jambs and other hard-to-reach areas",
-  "Headliner cleaning as part of a complete cabin refresh",
-  "UV protection to help interior surfaces stand up to the Texas sun",
 ];
 export const SERVICES: Service[] = [
-  { slug: "exterior-detail", name: "Exterior Detail", description: "A thorough hand wash with professional Koch-Chemie products, finished with wax and sealant for a clean, glossy, protected exterior. Includes every treatment listed below.", includes: exterior, durationMinutes: 90, startingPriceCents: 9900 },
-  { slug: "interior-detail", name: "Interior Full Reset", description: "Refresh the entire cabin with deep carpet care, cleaned and conditioned leather, detailed brushwork, and UV protection. Includes every treatment listed below.", includes: interior, durationMinutes: 120, startingPriceCents: 14900 },
-  { slug: "full-detail", name: "Full Detail", description: "Bring the whole vehicle back to its best with our Exterior Detail and Interior Full Reset in one appointment. Includes the complete wash, wax, sealant, and cabin-care treatments listed below.", includes: [...exterior, ...interior], durationMinutes: 240, startingPriceCents: 19900 },
-  { slug: "maintenance-detail", name: "Maintenance Detail", description: "Keep a previously detailed vehicle looking cared for with regular maintenance. For deep cleaning and the complete treatments listed in our other packages, choose an Exterior Detail, Interior Full Reset, or Full Detail.", includes: ["Ongoing upkeep for vehicles that have already received a full detail"], durationMinutes: 90, startingPriceCents: 8900 },
+  { slug: "exterior-detail", name: "Exterior Detail", description: "A meticulous hand wash with professional Koch-Chemie products, finished with liquid ceramic SiO2 wax and sealant for a glossy, protected exterior.", includes: exterior, durationMinutes: 90, startingPriceCents: 9900 },
+  { slug: "interior-detail", name: "Interior Detail", description: "Refresh your cabin with complete trash removal, deep carpet care, cleaned and conditioned leather, and precise cleaning of interior surfaces and seams.", includes: interior, durationMinutes: 120, startingPriceCents: 16900 },
+  { slug: "full-detail", name: "Double Detail", description: "Our complete Exterior Detail and Interior Detail together: thorough cabin care and a meticulous exterior finish with liquid ceramic SiO2 wax. Every treatment from both packages is included.", includes: [...exterior, ...interior], durationMinutes: 240, startingPriceCents: 19900 },
+  { slug: "full-reset", name: "Full Reset", description: "Our premium detailing experience. Everything in Double Detail, elevated with specialist headliner care, dedicated pet hair removal, six-month interior UV protection, and a double application of liquid ceramic SiO2 wax for an exceptionally rich exterior finish.", includes: [...exterior.filter(item => !item.includes("single application")), ...interior, "Careful, thorough headliner cleaning for a refreshed cabin from top to bottom", "Dedicated pet hair removal from upholstery and carpets", "Premium interior UV protectant with up to six months of protection", "Two carefully applied layers of liquid ceramic SiO2 wax for enhanced gloss and water repellency"], durationMinutes: 300, startingPriceCents: 26900 },
 ];
 export const ADD_ONS = [
   { slug: "clay-bar", name: "Clay bar decontamination", description: "Lift bonded surface contaminants with clay-bar treatment for a smoother surface and a glossy finish.", priceCents: 8000, durationMinutes: 30, maxQuantity: 1 },

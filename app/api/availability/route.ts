@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getService, priceAddOns } from "@/lib/services";
+import { getConfiguredServices } from "@/lib/service-durations";
+import { priceAddOns } from "@/lib/services";
 import { getAvailableSlots } from "@/lib/schedule";
 
 export const runtime = "nodejs";
@@ -9,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const date = request.nextUrl.searchParams.get("date") || "";
     const serviceSlug = request.nextUrl.searchParams.get("service") || "";
-    const service = getService(serviceSlug);
+    const service = (await getConfiguredServices()).find(item => item.slug === serviceSlug);
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !service) {
       return NextResponse.json({ error: "Choose a valid date and service." }, { status: 400 });
