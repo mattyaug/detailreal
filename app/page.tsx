@@ -15,28 +15,13 @@ export default async function HomePage() {
     <>
       <SiteHeader />
       <main className="home">
-        <section className="film-hero">
-          <video
-            className="hero-film"
-            autoPlay
-            muted
-            loop
-            playsInline
-            poster="/detail-studio.svg"
-            aria-label="A freshly detailed car being finished by hand"
-          >
-            <source src="https://videos.pexels.com/video-files/4488706/4488706-hd_1920_1080_25fps.mp4" type="video/mp4" />
-          </video>
-          <div className="film-shade" />
-          <div className="film-copy shell">
-            <p className="kicker">Nueces Detail · Portland, Texas</p>
-            <h1>A better clean.<br /><em>At your curb.</em></h1>
-            <div className="hero-bottom">
-              <p>From a carefully washed and protected exterior to a thoroughly refreshed cabin, we bring professional detailing to your driveway.</p>
-              <Link className="brand-button" href="/book">Schedule a detail <span>↗</span></Link>
-            </div>
+        <section className="poster-hero" aria-labelledby="poster-heading">
+          <h1 id="poster-heading" className="visually-hidden">Nueces Detail — Mobile auto detailing in Portland, Texas</h1>
+          <img className="brand-poster" src="/nueces-hero-poster.webp" width={1536} height={1024} fetchPriority="high" alt="Nueces Detail, Portland, Texas. Custom ink lettering and an illustrated classic coupe beside the Coastal Bend waterfront." />
+          <div className="poster-caption shell">
+            <p>A careful clean. A fresh start.<br /><span>Professional mobile detailing, right in your driveway.</span></p>
+            <div><Link className="brand-button" href="/book">Schedule your detail <span>↗</span></Link><a className="poster-services" href="#services">Explore the services ↓</a></div>
           </div>
-          <a className="scroll-note" href="#services"><span>Scroll</span><i /></a>
         </section>
 
         <section className="intro-strip">
@@ -71,7 +56,7 @@ export default async function HomePage() {
 
         <section className="manifesto" id="process">
           <div className="shell manifesto-grid">
-            <div className="manifesto-image" role="img" aria-label="Clean black car bodywork and wheel" />
+            <figure className="difference-photo"><img src="/nueces-difference.webp" alt="Two black-and-white Texas State Trooper SUVs, shown in the supplied Nueces Detail showcase graphic." width={1536} height={1024} loading="lazy" /></figure>
             <div className="manifesto-copy">
               <p className="section-index">03 / The difference</p>
               <h2>We come prepared. You get your day back.</h2>

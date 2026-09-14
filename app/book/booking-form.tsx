@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { CONFIRMATION_STORAGE_KEY, confirmationPath } from "@/lib/booking-confirmation";
 import { bookableDates } from "@/lib/booking-dates";
 import { type Service, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
@@ -15,6 +17,7 @@ type BookingResponse = {
 };
 
 export function BookingForm({ initialService, services: SERVICES }: { initialService: string; services: Service[] }) {
+  const router = useRouter();
   const [serviceSlug, setServiceSlug] = useState(initialService);
   const [vehicleSize, setVehicleSize] = useState<string>("compact");
   const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
@@ -108,6 +111,11 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
       setVehicleSize("compact");
       setUtilitiesConfirmed(false);
       formElement.reset();
+      if (data.booking) {
+        try { sessionStorage.setItem(CONFIRMATION_STORAGE_KEY, JSON.stringify({ ...data.booking, savedAt: Date.now() })); }
+        catch { /* A saved booking must still reach the confirmation page without browser storage. */ }
+        router.replace(confirmationPath(data.emailAccepted === true));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to book this appointment.");
     } finally {

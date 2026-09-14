@@ -206,6 +206,32 @@ h3 { font-size: 23px; }
 .mobile-call { color: var(--brand-blue); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
 
 .home { background: var(--paper); color: var(--ink); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.poster-hero { background: #f2ecdf; border-bottom: 1px solid var(--rule); }
+.brand-poster { display: block; width: 100%; max-width: 1440px; height: auto; margin: 0 auto; }
+.poster-caption { display: flex; justify-content: space-between; align-items: center; gap: 32px; padding-top: 24px; padding-bottom: 30px; border-top: 1px solid var(--rule); }
+.poster-caption p { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.025em; }
+.poster-caption p span { font-size: 14px; font-weight: 400; letter-spacing: normal; color: #575550; }
+.poster-caption > div { display: flex; align-items: center; gap: 24px; }
+.poster-services { font-size: 12px; border-bottom: 1px solid var(--ink); padding: 8px 0; }
+.difference-photo { margin: 0; align-self: center; background: #090a0c; }
+.difference-photo img { display: block; width: 100%; height: auto; }
+.confirmation-page { background: var(--paper); color: var(--ink); min-height: 75vh; padding: 90px 0 110px; }
+.confirmation-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: clamp(36px,7vw,110px); }
+.confirmation-intro h1 { font-family: Georgia, serif; font-style: italic; font-weight: 400; font-size: clamp(42px,5.5vw,76px); line-height: 1.04; letter-spacing: -.045em; margin: 30px 0; }
+.confirmation-intro p { max-width: 620px; color: #575550; }
+.confirmation-intro .confirmation-lede { font-size: 20px; color: var(--ink); }
+.confirmation-links { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin: 32px 0; }
+.confirmation-home { font-size: 14px; border-bottom: 1px solid currentColor; padding-bottom: 5px; }
+.confirmation-note { border-top: 5px solid var(--brand-blue); padding: 25px 28px; background: #e4e0d7; align-self: start; }
+.confirmation-note h2 { font-size: 28px; line-height: 1.2; margin: 24px 0; }
+.confirmation-note p { color: #575550; }
+.confirmation-receipt { margin: 30px 0; border-top: 1px solid var(--rule); }
+.confirmation-receipt > div { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.confirmation-receipt dt { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #575550; }
+.confirmation-receipt dd { margin: 5px 0 0; font-weight: 700; overflow-wrap: anywhere; }
+.confirmation-contact a { border-bottom: 1px solid currentColor; overflow-wrap: anywhere; }
+@media (max-width: 800px) { .poster-caption, .poster-caption > div { align-items: flex-start; flex-direction: column; gap: 18px; } .poster-caption p { font-size: 20px; } .confirmation-layout { grid-template-columns: 1fr; } .confirmation-page { padding: 45px 0 60px; } .confirmation-note { padding: 24px 20px; } }
 .film-hero { min-height: calc(100svh - 68px); height: 780px; position: relative; overflow: hidden; display: flex; align-items: flex-end; color: white; }
 .hero-film { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #202222; }
 .film-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,.12) 72%), linear-gradient(0deg, rgba(0,0,0,.58), transparent 62%); }
