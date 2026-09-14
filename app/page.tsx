@@ -50,10 +50,10 @@ export default async function HomePage() {
             <div className="package-list">
               {SERVICES.map((service, index) => (
                 <Link className="package-row" href={`/book?service=${service.slug}`} key={service.slug}>
-                  <span className="package-no">{packageNumbers[index]}</span>
+                  <span className="package-no">{String(index + 1).padStart(2, "0")}</span>
                   <div><h3>{service.name}</h3><p>{service.description}</p><ul className="service-inclusions">{service.includes.map((item) => <li key={item}>{item}</li>)}</ul></div>
                   <div className="package-price"><small>from</small><strong>{formatPrice(service.startingPriceCents)}</strong></div>
-                  <span className="package-time">{service.durationMinutes / 60} hr{service.durationMinutes > 60 ? "s" : ""}</span>
+                  <span className="package-time">{service.dropOff ? "1–2 days" : `${service.durationMinutes / 60} hrs`}</span>
                   <span className="circle-arrow">↗</span>
                 </Link>
               ))}
