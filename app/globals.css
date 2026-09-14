@@ -214,7 +214,7 @@ h3 { font-size: 23px; }
 .poster-caption p span { font-size: 14px; font-weight: 400; letter-spacing: normal; color: #575550; }
 .poster-caption > div { display: flex; align-items: center; gap: 24px; }
 .poster-services { font-size: 12px; border-bottom: 1px solid var(--ink); padding: 8px 0; }
-.difference-photo { margin: 0; align-self: center; background: #090a0c; }
+.difference-photo { margin: 0; align-self: center; background: transparent; }
 .difference-photo img { display: block; width: 100%; height: auto; }
 .confirmation-page { background: var(--paper); color: var(--ink); min-height: 75vh; padding: 90px 0 110px; }
 .confirmation-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: clamp(36px,7vw,110px); }
@@ -420,3 +420,15 @@ h3 { font-size: 23px; }
 .privacy-page section { margin-top: 36px; }
 .privacy-page p { line-height: 1.75; }
 .privacy-updated { color: #625f59; }
+
+.detail-slides { position: absolute; inset: 0; background: #202222; }
+.detail-slides img { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 900ms ease; }
+.detail-slides img.active { opacity: 1; }
+.slide-controls { position: absolute; z-index: 4; top: 24px; right: 4%; display: flex; gap: 8px; flex-wrap: wrap; }
+.slide-controls button { border: 1px solid #ffffff70; color: white; background: #0008; padding: 9px 12px; cursor: pointer; font-size: 12px; }
+.slide-controls button[aria-pressed="true"] { background: white; color: #111; }
+@media (prefers-reduced-motion: reduce) { .detail-slides img { transition: none; } }
+
+.vehicle-cutout { display: block; width: 100%; height: auto; }
+.catalog-settings { border: 1px solid #bbb; padding: 16px; display: grid; gap: 10px; }
+

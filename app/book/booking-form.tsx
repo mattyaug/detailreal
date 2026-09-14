@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CONFIRMATION_STORAGE_KEY, confirmationPath } from "@/lib/booking-confirmation";
 import { bookableDates } from "@/lib/booking-dates";
-import { type Service, ADD_ONS, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
+import { type Service, type AddOn, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
 
@@ -16,13 +16,13 @@ type BookingResponse = {
   error?: string;
 };
 
-export function BookingForm({ initialService, services: SERVICES }: { initialService: string; services: Service[] }) {
+export function BookingForm({ initialService, services: SERVICES, addOnCatalog }: { initialService: string; services: Service[]; addOnCatalog: AddOn[] }) {
   const router = useRouter();
   const [serviceSlug, setServiceSlug] = useState(initialService);
   const [vehicleSize, setVehicleSize] = useState<string>("compact");
   const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
   const [utilitiesConfirmed, setUtilitiesConfirmed] = useState(false);
-  const addOns = useMemo(() => priceAddOns(addOnSelections), [addOnSelections]);
+
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
   const [selectedTime, setSelectedTime] = useState("");
@@ -36,6 +36,8 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
     () => SERVICES.find((item) => item.slug === serviceSlug) ?? SERVICES[0],
     [serviceSlug, SERVICES],
   );
+  const ADD_ONS = addOnCatalog.filter(item => !item.correctionOnly || service.category === "paint-correction");
+  const addOns = priceAddOns(addOnSelections, ADD_ONS, vehicleSize, service.category);
   const vehiclePricing = priceVehicle(service, vehicleSize);
   const totalPrice = vehiclePricing.priceCents + addOns.priceCents;
   const totalMinutes = service.durationMinutes + addOns.durationMinutes;
@@ -62,7 +64,7 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
     const controller = new AbortController();
     setLoadingSlots(true);
 
-    fetch(`/api/availability?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service.slug)}&addOns=${encodeURIComponent(JSON.stringify(addOnSelections))}`, {
+    fetch(`/api/availability?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service.slug)}&vehicleSize=${encodeURIComponent(vehicleSize)}&addOns=${encodeURIComponent(JSON.stringify(addOnSelections))}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -76,7 +78,7 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
       .finally(() => setLoadingSlots(false));
 
     return () => controller.abort();
-  }, [date, service, addOnSelections]);
+  }, [date, service, addOnSelections, vehicleSize]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,7 +100,7 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed, durationMinutes: totalMinutes }),
+        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed, durationMinutes: totalMinutes, priceCents: totalPrice }),
       });
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");
@@ -157,23 +159,23 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
         <div className="form-grid">
           <div className="field full">
             <label htmlFor="service">Service</label>
-            <select id="service" className="select" value={serviceSlug} onChange={(e) => setServiceSlug(e.target.value)}>
+            <select id="service" className="select" value={serviceSlug} onChange={(e) => { setServiceSlug(e.target.value); setAddOnSelections([]); setSelectedTime(""); }}>
               {SERVICES.map((item) => <option key={item.slug} value={item.slug}>{item.name} — from {formatPrice(item.startingPriceCents)}</option>)}
             </select>
           </div>
           <fieldset className="field full vehicle-size-field"><legend>Find your vehicle fit</legend>
             <p className="help" id="vehicle-size-help">Choose the size that best matches your vehicle. Your estimate updates below.</p>
             <div className="vehicle-size-options" aria-describedby="vehicle-size-help">
-              {VEHICLE_SIZES.map((size) => <label className={`vehicle-size-option${vehicleSize === size.slug ? " selected" : ""}`} key={size.slug}>
+              {VEHICLE_SIZES.map((baseSize) => { const size = priceVehicle(service, baseSize.slug).vehicleSize; return <label className={`vehicle-size-option${vehicleSize === size.slug ? " selected" : ""}`} key={size.slug}>
                 <input type="radio" name="vehicleSize" value={size.slug} checked={vehicleSize === size.slug} onChange={() => setVehicleSize(size.slug)} required />
                 <span><strong>{size.name}</strong><small>{size.description}</small></span>
                 <strong className="vehicle-size-price">{size.adjustmentCents ? `+${formatPrice(size.adjustmentCents)}` : "Base rate"}</strong>
-              </label>)}
+              </label>; })}
             </div>
             <p className="vehicle-size-total" aria-live="polite">Your estimate <strong>{formatPrice(totalPrice)}</strong></p>
           </fieldset>
           <fieldset className="field full" style={{ border: 0, padding: 0, margin: 0 }}><legend>Add-ons (optional)</legend>
-            {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.priceCents)}{item.slug === "headlight" ? " each" : ""}<small>{item.description} Adds {item.durationMinutes} minutes per selection.</small></span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
+            {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.sizePrices?.[VEHICLE_SIZES.findIndex(size => size.slug === vehicleSize)] ?? item.priceCents)}{item.slug === "headlight" ? " each" : ""}<small>{item.description} Adds {item.durationMinutes} minutes per selection.</small></span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
           </fieldset>
           <div className="field full">
             <label htmlFor="date">Choose a date</label>
@@ -212,3 +214,4 @@ export function BookingForm({ initialService, services: SERVICES }: { initialSer
     </section>
   );
 }
+

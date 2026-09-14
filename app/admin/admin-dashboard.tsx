@@ -2,6 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { CatalogFields } from "@/components/catalog-fields";
+import { VEHICLE_SIZES, type AddOn } from "@/lib/services";
 import type { Service } from "@/lib/services";
 
 type Booking = {
@@ -35,6 +37,7 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
   const [view, setView] = useState<"upcoming" | "archive">("upcoming");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [catalogAddOns, setCatalogAddOns] = useState<AddOn[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [savingDurations, setSavingDurations] = useState(false);
   const [hours, setHours] = useState<Hours[]>([]);
@@ -69,7 +72,8 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
       setHasMore(Boolean(bookingsData.hasMore));
       setHours((current) => !replaceHours && current.length ? current : availabilityData.availability || []);
       setBlocked(blockedData.blockedDates || []);
-      setServices(current => !replaceHours && current.length ? current : servicesData.services || []);
+      setCatalogAddOns(current => !replaceHours && current.length ? current : (servicesData.addOns || []).map((item: AddOn) => ({ ...item, enabled: item.enabled !== false, sizePrices: item.sizePrices ?? [item.priceCents,item.priceCents,item.priceCents] })));
+      setServices(current => !replaceHours && current.length ? current : (servicesData.services || []).map((item: Service) => ({ ...item, enabled: item.enabled !== false, sizePrices: item.sizePrices ?? VEHICLE_SIZES.map(size => item.startingPriceCents + size.adjustmentCents) })));
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not load the dashboard.");
     } finally {
@@ -141,11 +145,11 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     try {
       const response = await fetch("/api/admin/services", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ services: services.map(({ slug, durationMinutes }) => ({ slug, durationMinutes })) }),
+        body: JSON.stringify({ services: services, addOns: catalogAddOns }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to save durations.");
-      setMessage("Appointment durations saved. New bookings will use these times.");
+      setMessage("Prices and times saved. New bookings will use these settings.");
     } catch (error) { setError(error instanceof Error ? error.message : "Unable to save durations."); }
     finally { setSavingDurations(false); }
   }
@@ -209,14 +213,12 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
 
               <div style={{ display: "grid", gap: 20 }}>
                 <section className="admin-card">
-                  <h2>Appointment durations</h2>
-                  <p>Set the time reserved for each package in minutes. Add-ons add their own time. Changes apply to new bookings; existing appointments keep their reserved time.</p>
+                  <h2>Services, prices &amp; times</h2>
+                  <p>Set the full price for each vehicle size and reserved time in minutes. Configure and enable paint correction and ceramic coating when ready. Existing bookings keep their saved price and time.</p>
                   <form onSubmit={saveDurations} className="form-grid">
-                    {services.map(service => <div className="field full" key={service.slug}>
-                      <label htmlFor={`duration-${service.slug}`}>{service.name} (minutes)</label>
-                      <input className="input" id={`duration-${service.slug}`} type="number" min={30} max={720} step={15} required disabled={savingDurations} value={service.durationMinutes || ""} onChange={event => setServices(current => current.map(item => item.slug === service.slug ? { ...item, durationMinutes: Number(event.target.value) } : item))} />
-                    </div>)}
-                    <button className="button button-small" disabled={savingDurations}>{savingDurations ? "Saving…" : "Save durations"}</button>
+                    <CatalogFields rows={services} onChange={setServices} disabled={savingDurations} />
+                    <h3>Add-ons</h3><CatalogFields rows={catalogAddOns} onChange={setCatalogAddOns} disabled={savingDurations} />
+                    <button className="button button-small" disabled={savingDurations}>{savingDurations ? "Saving…" : "Save prices & times"}</button>
                   </form>
                 </section>
                 <section className="admin-card">
@@ -267,3 +269,4 @@ export function AdminDashboard({ ownerEmail }: { ownerEmail: string }) {
     </>
   );
 }
+

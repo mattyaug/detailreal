@@ -1,31 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession } from "@/lib/auth";
-import { getConfiguredServices } from "@/lib/service-durations";
+import { getConfiguredServices, getConfiguredAddOns } from "@/lib/service-durations";
 import { executeBatch } from "@/lib/db";
-import { SERVICES } from "@/lib/services";
-
+import { SERVICES, ADD_ONS } from "@/lib/services";
+import { validCatalogRows } from "@/lib/catalog-validation";
 export const dynamic = "force-dynamic";
-
 export async function GET() {
   if (!(await getAdminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  try { return NextResponse.json({ services: await getConfiguredServices() }); }
-  catch { return NextResponse.json({ error: "Unable to load appointment durations." }, { status: 500 }); }
+  try { return NextResponse.json({ services: await getConfiguredServices(), addOns: await getConfiguredAddOns() }); }
+  catch { return NextResponse.json({ error: "Unable to load catalog settings." }, { status: 500 }); }
 }
-
 export async function PUT(request: NextRequest) {
   if (!(await getAdminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const { services } = await request.json();
-    if (!Array.isArray(services) || services.length !== SERVICES.length ||
-      new Set(services.map(row => row?.slug)).size !== SERVICES.length ||
-      services.some(row => !row || !SERVICES.some(service => service.slug === row.slug) ||
-        !Number.isInteger(row.durationMinutes) || row.durationMinutes < 30 || row.durationMinutes > 720 || row.durationMinutes % 15 !== 0)) {
-      return NextResponse.json({ error: "Set every package to 30–720 minutes, in 15-minute increments." }, { status: 400 });
-    }
-    await executeBatch(services.map(row => ({
-      sql: "INSERT INTO service_durations (service_slug, duration_minutes) VALUES (?, ?) ON CONFLICT (service_slug) DO UPDATE SET duration_minutes = excluded.duration_minutes",
-      params: [row.slug, row.durationMinutes],
-    })));
+    const { services, addOns } = await request.json();
+    if (!validCatalogRows(services, SERVICES.map(s => s.slug), 30) || !validCatalogRows(addOns, ADD_ONS.map(s => s.slug), 0)) return NextResponse.json({ error: "Set three valid prices and time in 15-minute increments, up to 720 minutes. Enabled services need at least 30 minutes." }, { status: 400 });
+    await executeBatch([...services, ...addOns].map(row => ({ sql: "INSERT INTO catalog_settings (slug, prices_json, duration_minutes, enabled) VALUES (?, ?, ?, ?) ON CONFLICT (slug) DO UPDATE SET prices_json=excluded.prices_json, duration_minutes=excluded.duration_minutes, enabled=excluded.enabled", params: [row.slug, JSON.stringify(row.sizePrices), row.durationMinutes, row.enabled ? 1 : 0] })));
     return NextResponse.json({ ok: true });
-  } catch { return NextResponse.json({ error: "Unable to save appointment durations." }, { status: 500 }); }
+  } catch { return NextResponse.json({ error: "Unable to save catalog settings." }, { status: 500 }); }
 }
+

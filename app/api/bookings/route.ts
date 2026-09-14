@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { DateTime } from "luxon";
 import { NextRequest, NextResponse } from "next/server";
-import { getConfiguredServices } from "@/lib/service-durations";
+import { getConfiguredServices, getConfiguredAddOns } from "@/lib/service-durations";
 import { priceVehicle, priceAddOns } from "@/lib/services";
 import { BUSINESS_TIME_ZONE, getAvailableSlots } from "@/lib/schedule";
 import { isFutureBookingDate } from "@/lib/booking-dates";
@@ -25,6 +25,7 @@ type BookingInput = {
   addOns?: unknown;
   utilitiesConfirmed?: boolean;
   durationMinutes?: number;
+  priceCents?: number;
 };
 
 function clean(value: unknown, max = 500) {
@@ -37,8 +38,7 @@ export async function POST(request: NextRequest) {
     if (clean(body.company)) return NextResponse.json({ ok: true });
 
     if (body.utilitiesConfirmed !== true) return NextResponse.json({ error: "Confirm access to water and electricity before booking." }, { status: 400 });
-    let addOns;
-    try { addOns = priceAddOns(body.addOns ?? []); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
+
 
     const customerName = clean(body.customerName, 120);
     const email = clean(body.email, 180).toLowerCase();
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     const address = clean(body.address, 220);
     const vehicle = clean(body.vehicle, 160);
     const notes = clean(body.notes, 1500);
-    const service = (await getConfiguredServices()).find(item => item.slug === clean(body.serviceSlug, 80));
+    const service = (await getConfiguredServices()).filter(item => item.enabled !== false).find(item => item.slug === clean(body.serviceSlug, 80));
     const startsAt = clean(body.startsAt, 80);
 
     if (!customerName || ! /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.length < 7 || !address || !vehicle || !service || !startsAt) {
@@ -59,12 +59,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Same-day appointments are not available. Choose tomorrow or a later date (Central Time)." }, { status: 400 });
     }
 
+    let addOns;
+    try { addOns = priceAddOns(body.addOns ?? [], await getConfiguredAddOns(), body.vehicleSize, service.category); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
     const durationMinutes = service.durationMinutes + addOns.durationMinutes;
     if (body.durationMinutes !== undefined && body.durationMinutes !== durationMinutes) return NextResponse.json({ error: "This package’s appointment duration has changed. Refresh the page and select a time again." }, { status: 409 });
     let vehiclePricing;
     try { vehiclePricing = priceVehicle(service, body.vehicleSize); }
     catch { return NextResponse.json({ error: "Choose a vehicle size." }, { status: 400 }); }
     const priceCents = vehiclePricing.priceCents + addOns.priceCents;
+    if (body.priceCents !== undefined && body.priceCents !== priceCents) return NextResponse.json({ error: "Prices have changed. Refresh the booking page to review your updated estimate." }, { status: 409 });
     const serviceName = `${service.name} — ${vehiclePricing.vehicleSize.name}` + (addOns.summary ? ` + ${addOns.summary}` : "");
     const bookingNotes = `${notes}${notes ? "\n\n" : ""}Water and electricity access confirmed.${addOns.summary ? `\nAdd-ons: ${addOns.summary}` : ""}`;
     const localDate = start.toFormat("yyyy-MM-dd");
@@ -128,3 +131,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "We could not create the booking. Please try again." }, { status: 500 });
   }
 }
+

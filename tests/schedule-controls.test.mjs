@@ -63,5 +63,6 @@ test('archive includes every older record across pages and leaves only active bo
 });
 
 test('package base prices match the current menu', () => {
-  assert.deepEqual(SERVICES.map(service => service.startingPriceCents), [9900, 16900, 19900, 26900]);
+  assert.deepEqual(SERVICES.filter(service => !service.category).map(service => service.startingPriceCents), [9900, 16900, 19900, 26900]);
 });
+
