@@ -432,3 +432,7 @@ h3 { font-size: 23px; }
 .vehicle-cutout { display: block; width: 100%; height: auto; }
 .catalog-settings { border: 1px solid #bbb; padding: 16px; display: grid; gap: 10px; }
 
+.compact-addons { border: 0; padding: 0; margin: 0; }
+.compact-addons .addon-choice { display: grid; grid-template-columns: minmax(0,1fr) 76px; align-items: center; gap: 12px; padding: 9px 0; margin: 0; border-bottom: 1px solid var(--rule); font-size: 13px; }
+.compact-addons .addon-choice .select { padding: 7px 8px; min-height: 36px; height: 36px; }
+

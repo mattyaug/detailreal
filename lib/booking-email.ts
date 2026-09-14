@@ -4,6 +4,7 @@ export type BookingEmail = {
   serviceName: string;
   startsAt: string;
   durationMinutes: number;
+  dropOff?: boolean;
 };
 
 export const OWNER_NOTIFICATION_EMAIL = "matthewdaguinaldo@gmail.com";
@@ -18,7 +19,7 @@ export function bookingMessages(booking: BookingEmail, from: string): { customer
     `Booking reference: ${booking.id}`,
     `Service: ${booking.serviceName}`,
     `Appointment: ${when} (Central Time)`,
-    `Estimated duration: ${booking.durationMinutes} minutes`,
+    booking.dropOff ? "Drop-off required: 1–2 days for ceramic coating application and curing. Includes two-step paint correction and clay bar decontamination. Call or text 361-633-9667 to coordinate drop-off and pickup." : `Estimated duration: ${booking.durationMinutes} minutes`,
   ].join("\n");
   return {
     customer: {
@@ -73,3 +74,4 @@ export async function sendBookingEmails(
   const [customer, owner] = await Promise.all([deliver("customer"), deliver("owner")]);
   return { customer, owner };
 }
+

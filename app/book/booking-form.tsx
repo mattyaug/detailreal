@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CONFIRMATION_STORAGE_KEY, confirmationPath } from "@/lib/booking-confirmation";
 import { bookableDates } from "@/lib/booking-dates";
-import { type Service, type AddOn, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
+import { type Service, type AddOn, includesClayBar, VEHICLE_SIZES, priceVehicle, priceAddOns, type AddOnSelection, formatPrice } from "@/lib/services";
 
 type Slot = { value: string; label: string };
 
@@ -22,6 +22,7 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
   const [vehicleSize, setVehicleSize] = useState<string>("compact");
   const [addOnSelections, setAddOnSelections] = useState<AddOnSelection[]>([]);
   const [utilitiesConfirmed, setUtilitiesConfirmed] = useState(false);
+  const [dropOffConfirmed, setDropOffConfirmed] = useState(false);
 
   const [date, setDate] = useState("");
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -36,11 +37,11 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
     () => SERVICES.find((item) => item.slug === serviceSlug) ?? SERVICES[0],
     [serviceSlug, SERVICES],
   );
-  const ADD_ONS = addOnCatalog.filter(item => !item.correctionOnly || service.category === "paint-correction");
-  const addOns = priceAddOns(addOnSelections, ADD_ONS, vehicleSize, service.category);
+  const ADD_ONS = addOnCatalog.filter(item => (!item.correctionOnly || service.category === "paint-correction") && !(item.slug === "clay-bar" && includesClayBar(service.slug)));
+  const addOns = priceAddOns(addOnSelections, ADD_ONS, vehicleSize, service.category, service.slug);
   const vehiclePricing = priceVehicle(service, vehicleSize);
   const totalPrice = vehiclePricing.priceCents + addOns.priceCents;
-  const totalMinutes = service.durationMinutes + addOns.durationMinutes;
+  const totalMinutes = service.dropOff ? 2880 : service.durationMinutes + addOns.durationMinutes;
   const [dates, setDates] = useState(() => bookableDates());
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
     setError("");
     setConfirmation(undefined);
 
-    if (!utilitiesConfirmed) { setError("Confirm access to water and electricity before booking."); return; }
+    if (service.dropOff ? !dropOffConfirmed : !utilitiesConfirmed) { setError("Confirm the service requirements before booking."); return; }
     if (!selectedTime) {
       setError("Choose an available appointment time first.");
       return;
@@ -100,7 +101,7 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed, durationMinutes: totalMinutes, priceCents: totalPrice }),
+        body: JSON.stringify({ ...payload, serviceSlug, vehicleSize, startsAt: selectedTime, addOns: addOnSelections, utilitiesConfirmed, dropOffConfirmed, durationMinutes: totalMinutes, priceCents: totalPrice }),
       });
       const data: BookingResponse = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to book this appointment.");
@@ -137,8 +138,8 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
           <div className="summary-item"><span>Vehicle size</span><strong>{vehiclePricing.vehicleSize.adjustmentCents ? `+${formatPrice(vehiclePricing.vehicleSize.adjustmentCents)}` : "Base rate"}</strong></div>
           {addOns.priceCents > 0 && <div className="summary-item"><span>Add-ons</span><strong>{formatPrice(addOns.priceCents)}</strong></div>}
           <div className="summary-item" aria-live="polite"><span>Estimated total</span><strong>{formatPrice(totalPrice)}</strong></div>
-          <div className="summary-item"><span>Estimated time</span><strong>{totalMinutes / 60} hrs</strong></div>
-          <div className="summary-item"><span>Location</span><strong>Portland, TX</strong></div>
+          <div className="summary-item"><span>{service.dropOff ? "Vehicle drop-off" : "Estimated time"}</span><strong>{service.dropOff ? "1–2 days, including curing" : `${totalMinutes / 60} hrs`}</strong></div>
+          <div className="summary-item"><span>Location</span><strong>{service.dropOff ? "Drop-off · coordinate with us" : "Portland, TX"}</strong></div>
         </div>
         <div className="info-box">Your selected vehicle size is included in this estimate. Any additional work for vehicle condition will be discussed before we begin.</div>
       </aside>
@@ -159,7 +160,7 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
         <div className="form-grid">
           <div className="field full">
             <label htmlFor="service">Service</label>
-            <select id="service" className="select" value={serviceSlug} onChange={(e) => { setServiceSlug(e.target.value); setAddOnSelections([]); setSelectedTime(""); }}>
+            <select id="service" className="select" value={serviceSlug} onChange={(e) => { setServiceSlug(e.target.value); setDropOffConfirmed(false); setAddOnSelections([]); setSelectedTime(""); }}>
               {SERVICES.map((item) => <option key={item.slug} value={item.slug}>{item.name} — from {formatPrice(item.startingPriceCents)}</option>)}
             </select>
           </div>
@@ -174,11 +175,12 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
             </div>
             <p className="vehicle-size-total" aria-live="polite">Your estimate <strong>{formatPrice(totalPrice)}</strong></p>
           </fieldset>
-          <fieldset className="field full" style={{ border: 0, padding: 0, margin: 0 }}><legend>Add-ons (optional)</legend>
-            {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.sizePrices?.[VEHICLE_SIZES.findIndex(size => size.slug === vehicleSize)] ?? item.priceCents)}{item.slug === "headlight" ? " each" : ""}<small>{item.description} Adds {item.durationMinutes} minutes per selection.</small></span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
+          <fieldset className="field full compact-addons"><legend>Add-ons (optional)</legend>
+            {includesClayBar(service.slug) && <p className="help">Clay bar decontamination is included in your package.</p>}
+            {ADD_ONS.map((item) => <label className="addon-choice" key={item.slug}><span>{item.name} — {formatPrice(item.sizePrices?.[VEHICLE_SIZES.findIndex(size => size.slug === vehicleSize)] ?? item.priceCents)}{item.slug === "headlight" ? " each" : ""}</span><select className="select" aria-label={`${item.name} quantity`} value={addOnSelections.find((selected) => selected.slug === item.slug)?.quantity ?? 0} onChange={(event) => { const quantity = Number(event.target.value); setSelectedTime(""); setAddOnSelections((current) => [...current.filter((selected) => selected.slug !== item.slug), ...(quantity ? [{ slug: item.slug, quantity }] : [])]); }}><option value={0}>None</option>{Array.from({ length: item.maxQuantity }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select></label>)}
           </fieldset>
           <div className="field full">
-            <label htmlFor="date">Choose a date</label>
+            <label htmlFor="date">{service.dropOff ? "Choose a drop-off date" : "Choose a date"}</label>
             <select id="date" name="date" className="select date-menu" value={date} onChange={(e) => setDate(e.target.value)} required>
               <option value="">Select a day</option>
               {dates.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -198,17 +200,17 @@ export function BookingForm({ initialService, services: SERVICES, addOnCatalog }
           <div className="field"><label htmlFor="customerName">Name</label><input className="input" id="customerName" name="customerName" autoComplete="name" required /></div>
           <div className="field"><label htmlFor="phone">Phone</label><input className="input" id="phone" name="phone" type="tel" autoComplete="tel" required /></div>
           <div className="field full"><label htmlFor="email">Email</label><input className="input" id="email" name="email" type="email" autoComplete="email" required /></div>
-          <div className="field full"><label htmlFor="address">Service address</label><input className="input" id="address" name="address" autoComplete="street-address" placeholder="Street address in Portland, TX" required /></div>
+          <div className="field full"><label htmlFor="address">{service.dropOff ? "Your address (contact record)" : "Service address"}</label><input className="input" id="address" name="address" autoComplete="street-address" placeholder={service.dropOff ? "Your street address" : "Street address in Portland, TX"} required /></div>
           <div className="field full"><label htmlFor="vehicle">Vehicle</label><input className="input" id="vehicle" name="vehicle" placeholder="Example: 2022 Ford F-150" required /></div>
           <div className="field full"><label htmlFor="notes">Notes</label><textarea className="textarea" id="notes" name="notes" placeholder="Pet hair, stains, access instructions, water/power notes, etc." /></div>
           <div className="honeypot" aria-hidden="true"><label htmlFor="company">Company</label><input id="company" name="company" tabIndex={-1} autoComplete="off" /></div>
         </div>
 
-        <label className="utility-confirmation"><input type="checkbox" required checked={utilitiesConfirmed} onChange={(event) => setUtilitiesConfirmed(event.target.checked)} /><span>I confirm there will be access to water and electricity at the appointment location.</span></label>
+        {service.dropOff ? <label className="utility-confirmation"><input type="checkbox" required checked={dropOffConfirmed} onChange={event => setDropOffConfirmed(event.target.checked)} /><span>I understand I must drop off my vehicle for 1–2 days for ceramic coating application and curing. Two-step paint correction and clay bar are included. Call or text 361-633-9667 to coordinate drop-off and pickup.</span></label> : <label className="utility-confirmation"><input type="checkbox" required checked={utilitiesConfirmed} onChange={(event) => setUtilitiesConfirmed(event.target.checked)} /><span>I confirm there will be access to water and electricity at the appointment location.</span></label>}
         <p className="help">Learn how we handle your booking information in our <Link href="/privacy">Privacy Policy</Link>.</p>
         <div className="form-actions">
           <span className="help" aria-live="polite">Estimated total: <strong>{formatPrice(totalPrice)}</strong>. Submitting reserves the selected time immediately.</span>
-          <button className="button" disabled={submitting || !selectedTime || !utilitiesConfirmed}>{submitting ? "Booking…" : "Confirm appointment"}</button>
+          <button className="button" disabled={submitting || !selectedTime || (service.dropOff ? !dropOffConfirmed : !utilitiesConfirmed)}>{submitting ? "Booking…" : "Confirm appointment"}</button>
         </div>
       </form>
     </section>

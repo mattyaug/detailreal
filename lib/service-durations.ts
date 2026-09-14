@@ -9,7 +9,7 @@ export async function getConfiguredServices() {
   return SERVICES.map(service => ({ ...service,
     durationMinutes: result.rows.find(row => row.service_slug === service.slug)?.duration_minutes ?? service.durationMinutes,
     ...settings.get(service.slug),
-  })).map(service => ({ ...service, startingPriceCents: service.sizePrices?.[0] ?? service.startingPriceCents }));
+  })).map(service => ({ ...service, startingPriceCents: service.sizePrices?.[0] ?? service.startingPriceCents, durationMinutes: service.dropOff ? 2880 : service.durationMinutes }));
 }
 async function getSettings() {
   const result = await query<{slug:string; prices_json:string; duration_minutes:number; enabled:number}>("SELECT * FROM catalog_settings");

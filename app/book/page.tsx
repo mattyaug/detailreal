@@ -30,7 +30,7 @@ export default async function BookPage({
           <div className="shell">
             <span className="eyebrow">Book online / Live availability</span>
             <h1>Book your Nueces detail.</h1>
-            <p>Choose a service, pick a day from the menu, and reserve a live appointment time. We&apos;ll come to you. Water and electricity access is required.</p>
+            <p>Choose a service, pick a day from the menu, and reserve a live appointment time. Mobile services require water and electricity access. Ceramic coating is a drop-off service: allow 1–2 days for application and curing.</p>
           </div>
         </section>
         {SERVICES.length ? <BookingForm initialService={initialService!} services={SERVICES} addOnCatalog={addOns} /> : <p className="shell">Online booking is temporarily unavailable. Please call or text us.</p>}

@@ -21,12 +21,13 @@ export default async function ConfirmationPage({ searchParams }: { searchParams:
         <Link className="confirmation-home" href="/">Back to Nueces Detail ↗</Link>
       </div>
       <aside className="confirmation-note">
-        <span className="section-index">Before we arrive</span>
+        <span className="section-index">Before your appointment</span>
         <h2>We'll bring the detail.<br />You bring the keys.</h2>
-        <p>Please have your vehicle accessible and provide access to water and electricity at the appointment location.</p>
+        <p>For mobile detailing, please provide access to water and electricity. Ceramic coating requires vehicle drop-off for 1–2 days, including curing. Call or text us to coordinate drop-off and pickup.</p>
         {(delivery === "sent" || delivery === "failed") && <BookingReceipt />}
         <p className="confirmation-contact">Questions or a change of plans?<br /><a href="mailto:contact@nuecesdetail.com">contact@nuecesdetail.com</a></p>
       </aside>
     </div>
   </main><SiteFooter /></>;
 }
+

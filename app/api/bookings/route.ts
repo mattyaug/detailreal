@@ -24,6 +24,7 @@ type BookingInput = {
   startsAt?: string;
   addOns?: unknown;
   utilitiesConfirmed?: boolean;
+  dropOffConfirmed?: boolean;
   durationMinutes?: number;
   priceCents?: number;
 };
@@ -37,7 +38,6 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as BookingInput;
     if (clean(body.company)) return NextResponse.json({ ok: true });
 
-    if (body.utilitiesConfirmed !== true) return NextResponse.json({ error: "Confirm access to water and electricity before booking." }, { status: 400 });
 
 
     const customerName = clean(body.customerName, 120);
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Complete all required booking fields." }, { status: 400 });
     }
 
+    if (service.dropOff ? body.dropOffConfirmed !== true : body.utilitiesConfirmed !== true) return NextResponse.json({ error: service.dropOff ? "Confirm the 1–2 day vehicle drop-off for ceramic coating." : "Confirm access to water and electricity before booking." }, { status: 400 });
     const start = DateTime.fromISO(startsAt, { setZone: true }).setZone(BUSINESS_TIME_ZONE);
     if (!start.isValid) return NextResponse.json({ error: "Choose a valid appointment time." }, { status: 400 });
     if (!isFutureBookingDate(start.toISODate()!)) {
@@ -60,8 +61,8 @@ export async function POST(request: NextRequest) {
     }
 
     let addOns;
-    try { addOns = priceAddOns(body.addOns ?? [], await getConfiguredAddOns(), body.vehicleSize, service.category); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
-    const durationMinutes = service.durationMinutes + addOns.durationMinutes;
+    try { addOns = priceAddOns(body.addOns ?? [], await getConfiguredAddOns(), body.vehicleSize, service.category, service.slug); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
+    const durationMinutes = service.dropOff ? 2880 : service.durationMinutes + addOns.durationMinutes;
     if (body.durationMinutes !== undefined && body.durationMinutes !== durationMinutes) return NextResponse.json({ error: "This package’s appointment duration has changed. Refresh the page and select a time again." }, { status: 409 });
     let vehiclePricing;
     try { vehiclePricing = priceVehicle(service, body.vehicleSize); }
@@ -69,9 +70,9 @@ export async function POST(request: NextRequest) {
     const priceCents = vehiclePricing.priceCents + addOns.priceCents;
     if (body.priceCents !== undefined && body.priceCents !== priceCents) return NextResponse.json({ error: "Prices have changed. Refresh the booking page to review your updated estimate." }, { status: 409 });
     const serviceName = `${service.name} — ${vehiclePricing.vehicleSize.name}` + (addOns.summary ? ` + ${addOns.summary}` : "");
-    const bookingNotes = `${notes}${notes ? "\n\n" : ""}Water and electricity access confirmed.${addOns.summary ? `\nAdd-ons: ${addOns.summary}` : ""}`;
+    const bookingNotes = `${notes}${notes ? "\n\n" : ""}${service.dropOff ? "Ceramic coating: drop-off for 1–2 days including curing. Two-step correction and clay bar included. Customer acknowledged drop-off. Coordinate drop-off and pickup directly." : "Water and electricity access confirmed."}${addOns.summary ? `\nAdd-ons: ${addOns.summary}` : ""}`;
     const localDate = start.toFormat("yyyy-MM-dd");
-    const available = await getAvailableSlots(localDate, durationMinutes);
+    const available = await getAvailableSlots(localDate, durationMinutes, service.dropOff);
     const stillAvailable = available.some((slot) => slot.value === start.toISO());
     if (!stillAvailable) {
       return NextResponse.json({ error: "That time was just taken. Choose another available slot." }, { status: 409 });
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
       const delivery = await sendBookingEmails({
         id, email,
         serviceName, startsAt: start.toUTC().toISO()!,
-        durationMinutes,
+        durationMinutes, dropOff: service.dropOff,
       });
       emailAccepted = delivery.customer;
     } catch {

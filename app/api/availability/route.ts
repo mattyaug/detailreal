@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     }
 
     let addOns;
-    try { addOns = priceAddOns(JSON.parse(request.nextUrl.searchParams.get("addOns") || "[]"), await getConfiguredAddOns(), request.nextUrl.searchParams.get("vehicleSize") || "compact", service.category); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
-    const slots = await getAvailableSlots(date, service.durationMinutes + addOns.durationMinutes);
+    try { addOns = priceAddOns(JSON.parse(request.nextUrl.searchParams.get("addOns") || "[]"), await getConfiguredAddOns(), request.nextUrl.searchParams.get("vehicleSize") || "compact", service.category, service.slug); } catch { return NextResponse.json({ error: "Choose valid add-ons." }, { status: 400 }); }
+    const slots = await getAvailableSlots(date, service.dropOff ? 2880 : service.durationMinutes + addOns.durationMinutes, service.dropOff);
     return NextResponse.json({ slots });
   } catch (error) {
     console.error(error);

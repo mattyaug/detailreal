@@ -21,7 +21,7 @@ type BookingRow = {
   ends_at: string;
 };
 
-export async function getAvailableSlots(date: string, durationMinutes: number) {
+export async function getAvailableSlots(date: string, durationMinutes: number, dropOff = false) {
   const localDate = DateTime.fromISO(date, { zone: BUSINESS_TIME_ZONE });
   if (!isFutureBookingDate(date)) return [];
 
@@ -61,7 +61,7 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     if (blockedResult.rowCount) return [];
 
     const dayStart = localDate.startOf("day").toUTC();
-    const dayEnd = localDate.endOf("day").toUTC();
+    const dayEnd = localDate.endOf("day").plus({ minutes: dropOff ? durationMinutes : 0 }).toUTC();
     const bookingsResult = await query<BookingRow>(
       `SELECT starts_at, ends_at
        FROM bookings
@@ -82,7 +82,7 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
   const now = DateTime.now().setZone(BUSINESS_TIME_ZONE);
   const slots: { value: string; label: string }[] = [];
 
-  while (cursor.plus({ minutes: durationMinutes }) <= close) {
+  while (cursor.plus({ minutes: dropOff ? SLOT_STEP_MINUTES : durationMinutes }) <= close) {
     const slotEnd = cursor.plus({ minutes: durationMinutes });
     const slotStartUtc = cursor.toUTC();
     const slotEndUtc = slotEnd.toUTC();
@@ -94,7 +94,8 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
     });
 
     const leadTimeOk = cursor > now.plus({ hours: 2 });
-    const hourBlocked = overlapsBlockedHour(cursor.hour * 60 + cursor.minute, slotEnd.hour * 60 + slotEnd.minute, blockedHours);
+    const intakeEnd = dropOff ? cursor.plus({ minutes: SLOT_STEP_MINUTES }) : slotEnd;
+    const hourBlocked = overlapsBlockedHour(cursor.hour * 60 + cursor.minute, intakeEnd.hour * 60 + intakeEnd.minute, blockedHours);
     if (!overlaps && !hourBlocked && leadTimeOk) {
       slots.push({
         value: cursor.toISO()!,
@@ -107,3 +108,4 @@ export async function getAvailableSlots(date: string, durationMinutes: number) {
 
   return slots;
 }
+
